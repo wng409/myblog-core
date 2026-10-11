@@ -212,8 +212,40 @@ SOFTWARE.
 
 > Font Awesome 说明：代码采用 MIT 许可，图标采用 CC BY 4.0，字体采用 SIL OFL 1.1，详见 https://fontawesome.com/license/free。
 
+## 贡献指南：多语言（i18n）
+
+本仓库内置零依赖的多语言方案，欢迎贡献新语言或完善现有翻译。
+
+**工作原理**
+
+- 每种语言是 `lib/i18n/<code>.js` 中的一个 CommonJS 模块，导出扁平的 `{ 'key': '译文' }` 映射。
+- 加载器 `lib/i18n.js` 在启动时扫描该目录，把每个 `.js` 文件都视为一种可用语言——无需手动注册。
+- 默认语言为 `zh`；缺失的 key 会自动回退到 `zh`。
+- 后台「首页设置」中的语言下拉由检测到的语言列表动态渲染，显示名取自 `lib/i18n.js` 中的 `LANG_LABELS`。
+
+**新增一种语言**
+
+1. 复制 `lib/i18n/en.js`（或 `zh.js`）为 `lib/i18n/<code>.js`，例如 `fr.js`。
+2. 翻译各项取值，但**不要新增、重命名或删除任何 key**——必须与 `zh.js` / `en.js` 保持完全一致的 key 集合。
+3. （可选）在 `lib/i18n.js` 的 `LANG_LABELS` 中补充显示名，例如 `fr: 'Français'`；若不补充，下拉将显示语言代码本身。
+4. 用 `npm start` 重启，新语言即出现在后台「首页设置 → 语言」中。
+
+**约定**
+
+- key 采用 `命名空间.名称` 形式（如 `nav.home`、`posts.search`、`admin.logs.title`）。
+- 取值保持纯文本：不要引入 HTML，也不要改变现有条目的拼接 / 插值约定。
+- 运行时日志与错误页同样使用这套 key。
+
+**提交前自检**
+
+```bash
+node -e "const a=Object.keys(require('./lib/i18n/zh.js')),b=Object.keys(require('./lib/i18n/fr.js'));console.log('缺失:',a.filter(k=>!b.includes(k)));console.log('多余:',b.filter(k=>!a.includes(k)))"
+```
+
+**贡献流程**：fork → 新建分支 → 添加或更新语言文件 → 向 `main` 提交 PR，并说明语言种类与翻译完整度。
+
 ## 许可与协议
 
 - **本仓库（myblog-core）**：以 [MIT](./LICENSE) 许可开源，可自由使用、修改、分发。
-- **上游完整项目**：个人私有项目（Proprietary），永久闭源。本仓库不包含其完整源码、部署脚本与私有配置，未经作者明确书面许可，禁止复制、修改、分发或用于任何商业用途。
 - **本地化第三方资源**：见[本地化的第三方前端资源与开源许可](#本地化的第三方前端资源与开源许可)。
+- **上游完整项目**：个人私有项目（Proprietary），永久闭源。本仓库不包含其完整源码、部署脚本与私有配置，未经作者明确书面许可，禁止复制、修改、分发或用于任何商业用途。

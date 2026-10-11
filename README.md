@@ -212,6 +212,38 @@ SOFTWARE.
 
 > Font Awesome note: the code is MIT-licensed, while icons are licensed under CC BY 4.0 and fonts under SIL OFL 1.1. See https://fontawesome.com/license/free for details.
 
+## Contributing: Localization (i18n)
+
+The site ships with a zero-dependency i18n layer, and new languages or translation fixes are always welcome.
+
+**How it works**
+
+- Each language is a CommonJS module at `lib/i18n/<code>.js` exporting a flat `{ 'key': 'text' }` map.
+- The loader `lib/i18n.js` scans that directory at startup and treats every `.js` file as an available language — no manual registration is needed.
+- The default language is `zh`; any missing key falls back to `zh`.
+- The language selector in **Admin → Home Settings** is rendered from the detected language list, and its display names come from `LANG_LABELS` in `lib/i18n.js`.
+
+**Add a new language**
+
+1. Copy `lib/i18n/en.js` (or `zh.js`) to `lib/i18n/<code>.js`, e.g. `fr.js`.
+2. Translate the values, but **never add, rename, or remove keys** — keep the exact same key set as `zh.js` / `en.js`.
+3. (Optional) Add a display name in `LANG_LABELS` inside `lib/i18n.js`, e.g. `fr: 'Français'`. Without it, the selector shows the raw language code.
+4. Restart with `npm start`; the new language then appears in **Admin → Home Settings → Language**.
+
+**Conventions**
+
+- Keys use the `namespace.name` form (e.g. `nav.home`, `posts.search`, `admin.logs.title`).
+- Keep values as plain text: do not introduce HTML, and do not change the concatenation/interpolation conventions used by existing entries.
+- Runtime log messages and error pages use the same key set.
+
+**Verify before submitting**
+
+```bash
+node -e "const a=Object.keys(require('./lib/i18n/zh.js')),b=Object.keys(require('./lib/i18n/fr.js'));console.log('missing:',a.filter(k=>!b.includes(k)));console.log('extra:',b.filter(k=>!a.includes(k)))"
+```
+
+**Contribution flow**: fork → create a branch → add or update the language file → open a PR against `main`, stating the language and how complete the translation is.
+
 ## License
 
 - **This Repository (myblog-core)**: Open-sourced under the [MIT](./LICENSE) License. Free to use, modify, and distribute.
