@@ -29,6 +29,7 @@
 | Markdown writing + Image upload | Yes | Yes |
 | Dark mode / Mobile adaptation | Yes | Yes |
 | Operation logs / Recycle bin / Orphan image cleanup | Yes | Yes |
+| Multi-language / i18n (zh / en / classical / mars built in) | Yes | No |
 | Multi-user roles (admin / editor / viewer) | No | Yes |
 | Server status monitoring page | No | Yes |
 | Short posts (Moments) | No | Yes |
@@ -36,7 +37,7 @@
 | Automated backup / One-way mirror / Webhook alerts | No | Yes |
 | Cloudflare Tunnel / Nginx production deployment | No | Yes |
 
-> Items marked "No" are not in this repository but are not missing from the complete version.
+> A "No" marks a capability not included in that column's version. Note: multi-language (i18n) is a core-only feature, not offered in the complete version.
 
 ## Core Philosophy
 
