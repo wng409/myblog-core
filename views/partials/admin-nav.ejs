@@ -1,0 +1,13 @@
+<nav class="admin-nav">
+  <a href="/admin" class="<%= active === 'dashboard' ? 'active' : '' %>"><%= t('admin.nav.posts') %></a>
+  <a href="/admin/settings" class="<%= active === 'settings' ? 'active' : '' %>"><%= t('admin.nav.settings') %></a>
+  <a href="/admin/logs" class="<%= active === 'logs' ? 'active' : '' %>"><%= t('admin.nav.logs') %></a>
+  <a href="/admin/profile" class="<%= active === 'profile' ? 'active' : '' %>"><%= t('admin.nav.profile') %></a>
+
+  <form method="POST" action="/admin/logout">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button type="submit"><%= t('admin.logout') %></button>
+  </form>
+
+  <%- include('./theme-switch', { variant: 'admin', id: 'themeToggleAdmin' }) %>
+</nav>

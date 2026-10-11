@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <%- include('../partials/theme-init') %>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= t('login.title') %> · <%= siteName %></title>
+  <link rel="stylesheet" href="/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .admin-login {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; background: var(--hw-light-gray);
+    }
+    .login-box {
+      background: var(--card-bg); padding: 40px; border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 380px;
+      border: 1px solid var(--hw-border);
+    }
+    .login-box h1 {
+      text-align: center; color: var(--hw-red);
+      margin-bottom: 6px; font-size: 1.8rem;
+    }
+    .login-box .subtitle {
+      text-align: center; color: var(--hw-medium-gray);
+      font-size: 0.85rem; margin-bottom: 24px;
+    }
+    .login-box input {
+      width: 100%; padding: 12px; border: 1px solid var(--hw-border);
+      border-radius: 6px; margin-bottom: 14px; font-size: 1rem;
+      transition: border-color 0.2s;
+      background: var(--card-bg); color: var(--text);
+    }
+    .login-box input:focus { outline: none; border-color: var(--hw-red); }
+    .login-box button {
+      width: 100%; padding: 12px; background: var(--hw-red);
+      color: white; border: none; border-radius: 6px;
+      font-size: 1rem; cursor: pointer;
+    }
+    .login-box button:hover { background: #c4000f; }
+    .login-box button:disabled { background: #999; cursor: not-allowed; }
+    .login-box .error {
+      color: var(--hw-red); text-align: center;
+      margin-bottom: 12px; font-size: 0.95rem; min-height: 1.2em;
+    }
+    .login-box .footer-tip {
+      text-align: center; color: var(--text-faint);
+      font-size: 0.75rem; margin-top: 16px;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+    .shake { animation: shake 0.5s; }
+  </style>
+</head>
+<body class="admin-login">
+  <div class="login-box" id="loginBox">
+    <h1><%= t('login.title') %></h1>
+    <p class="subtitle">— <%= siteName %> <%= t('login.subtitle') %> —</p>
+
+    <% if (error) { %>
+      <p class="error"><%= error %></p>
+    <% } else { %>
+      <p class="error"></p>
+    <% } %>
+
+    <form method="POST" action="/admin/login" id="loginForm">
+      <input
+        type="text"
+        id="usernameInput"
+        name="username"
+        placeholder="<%= t('login.username') %>"
+        required
+        autocomplete="username"
+        autofocus
+      >
+      <input
+        type="password"
+        id="passwordInput"
+        name="password"
+        placeholder="<%= t('login.password') %>"
+        required
+        autocomplete="current-password"
+      >
+      <button type="submit" id="loginBtn" data-loading="<%= t('login.submitting') %>"><%= t('login.submit') %></button>
+    </form>
+
+    <p class="footer-tip"><%= t('login.tip') %></p>
+  </div>
+
+  <script src="/js/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!-- 页面标题 -->
+<section class="page-title">
+  <div class="container">
+    <h1><%= t('posts.title') %></h1>
+    <p><%= t('posts.subtitle') %></p>
+  </div>
+</section>
+
+<!-- 筛选和排序 -->
+<div class="container">
+  <div class="filter-controls">
+    <!-- 标签筛选 -->
+    <div class="filter-group">
+      <div class="filter-label"><%= t('posts.filterTags') %></div>
+      <div class="tag-filters">
+        <a href="/posts<%= search ? '?search='+encodeURIComponent(search) : '' %>" class="tag-filter <%= !currentTag ? 'active' : '' %>"><%= t('posts.filterAll') %></a>
+        <% tags.forEach(tag => { %>
+          <a href="/posts?tag=<%= encodeURIComponent(tag) %><%= search ? '&search='+encodeURIComponent(search) : '' %>" class="tag-filter <%= currentTag === tag ? 'active' : '' %>">
+            <%= tag %>
+          </a>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- 搜索框 -->
+    <div class="filter-group">
+      <div class="filter-label"><%= t('posts.search') %></div>
+      <input type="text" id="searchInput" placeholder="<%= t('posts.searchPlaceholder') %>" value="<%= search %>" style="padding:6px 12px; border:1px solid var(--hw-border); border-radius:4px; width:180px;">
+      <button id="searchBtn" type="button" class="tag-filter" style="background:var(--hw-red); color:white; border:var(--hw-red);"><%= t('posts.searchBtn') %></button>
+    </div>
+
+    <!-- 排序 -->
+    <div class="filter-group">
+      <div class="filter-label"><%= t('posts.sort') %></div>
+      <div class="sort-options">
+        <a href="/posts?sort=desc<%= currentTag ? '&tag='+encodeURIComponent(currentTag) : '' %><%= search ? '&search='+encodeURIComponent(search) : '' %>" class="sort-btn <%= sort === 'desc' ? 'active' : '' %>"><%= t('posts.sortNewest') %></a>
+        <a href="/posts?sort=asc<%= currentTag ? '&tag='+encodeURIComponent(currentTag) : '' %><%= search ? '&search='+encodeURIComponent(search) : '' %>" class="sort-btn <%= sort === 'asc' ? 'active' : '' %>"><%= t('posts.sortOldest') %></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 文章列表 -->
+<section class="articles-content">
+  <div class="container">
+    <div class="articles-list">
+      <% if (posts && posts.length > 0) { %>
+        <% posts.forEach(post => { %>
+          <article class="article-item">
+            <div class="article-header">
+              <h2><%= post.title %></h2>
+              <div class="article-meta">
+                <span><i class="far fa-calendar"></i> <%= new Date(post.created_at).toISOString().slice(0,10) %></span>
+                <span><i class="far fa-clock"></i> <%= t('posts.readingTime') %><%= Math.ceil((post.content || '').length / 300) %><%= t('posts.minutes') %></span>
+              </div>
+              <div class="article-tags">
+                <% if (post.tags) { %>
+                  <% post.tags.split(',').forEach(tag => { %>
+                    <span class="article-tag"><%= tag.trim() %></span>
+                  <% }) %>
+                <% } %>
+              </div>
+            </div>
+            <div class="article-body">
+              <div class="article-image" style="background-image: url('<%= post.cover_image || 'https://via.placeholder.com/800x400' %>');"></div>
+              <p><%= post.content ? post.content.replace(/<[^>]+>/g,'').slice(0,200) + '...' : '' %></p>
+            </div>
+            <div class="article-footer">
+              <a href="/posts/<%= post.slug %>" class="project-link"><%= t('posts.readMore') %> <i class="fas fa-arrow-right"></i></a>
+            </div>
+          </article>
+        <% }) %>
+      <% } else { %>
+        <div class="no-results">
+          <i class="fas fa-search"></i>
+          <h3><%= t('posts.emptyTitle') %></h3>
+          <p><%= t('posts.emptyHint') %></p>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</section>

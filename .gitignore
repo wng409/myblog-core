@@ -1,0 +1,23 @@
+# 依赖
+node_modules/
+
+# 环境变量（含密钥）
+.env
+
+# 运行时生成
+sessions/
+backups/
+db/
+
+# 用户上传的图片（会持续积累，不进版本控制）
+public/uploads/
+
+# 上传临时目录
+public/_tmp/
+
+# 编辑器/系统文件
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+*~

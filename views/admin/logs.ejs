@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <%- include('../partials/theme-init') %>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= t('logs.title') %></title>
+  <link rel="stylesheet" href="/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .admin-container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+    .admin-header h1 { color: var(--hw-red); }
+    .btn { display: inline-block; padding: 10px 20px; background: var(--hw-red); color: white; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; font-size: 1rem; }
+    .btn:hover { background: #c4000f; }
+    .btn-secondary { background: var(--hw-medium-gray); }
+    .btn-secondary:hover { background: #555; }
+    .btn-sm { padding: 6px 14px; font-size: 0.9rem; }
+
+    .admin-nav { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; align-items: center; }
+    .admin-nav a { color: var(--text); text-decoration: none; padding: 8px 16px; border-radius: 6px; }
+    .admin-nav a:hover { background: var(--hw-light-gray); }
+    .admin-nav a.active { background: var(--hw-light-gray); font-weight: 500; }
+    .admin-nav form { display: inline; margin: 0; }
+    .admin-nav form button { color: var(--text); background: none; border: none; cursor: pointer; padding: 8px 16px; border-radius: 6px; font-size: 1rem; }
+    .admin-nav form button:hover { background: var(--hw-light-gray); }
+
+    .quick-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .quick-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border: 1px solid var(--hw-border);
+      border-radius: 20px;
+      background: var(--card-bg);
+      color: var(--text);
+      font-size: 0.85rem;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .quick-btn:hover { background: var(--hw-light-gray); }
+    .quick-btn.active { background: var(--hw-red); color: #fff; border-color: var(--hw-red); }
+
+    .log-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      background: var(--hw-light-gray);
+      border-radius: 8px;
+    }
+    .log-filter label {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-right: 2px;
+    }
+    .log-filter select,
+    .log-filter input {
+      padding: 6px 10px;
+      border: 1px solid var(--hw-border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background: var(--card-bg);
+    }
+    .log-filter select { min-width: 160px; }
+    .log-filter input { width: 140px; }
+    .log-filter-actions { margin-left: auto; display: flex; gap: 8px; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.92rem; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--hw-border); }
+    th { background: var(--hw-light-gray); position: sticky; top: 0; }
+    tr:hover { background: var(--surface-alt); }
+
+    .action {
+      font-family: monospace;
+      font-size: 0.85rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--surface-muted);
+      white-space: nowrap;
+      display: inline-block;
+    }
+    /* 成功 */
+    .action-login_success,
+    .action-restore_post { background: #d4edda; color: #155724; }
+    /* 失败 */
+    .action-login_fail { background: #f8d7da; color: #721c24; }
+    .action-login_rate_limited { background: #e0d4ff; color: #4b2fbf; }
+    /* 危险 */
+    .action-delete_post,
+    .action-purge_post { background: #ffe0e0; color: #c4000f; }
+    /* 新增 */
+    .action-create_post,
+    .action-upload_image,
+    .action-clean_orphan_images { background: #e0f7ff; color: #0066cc; }
+
+    .pagination { display: flex; gap: 8px; justify-content: center; margin-top: 20px; }
+    .pagination a, .pagination span { padding: 8px 14px; border: 1px solid var(--hw-border); border-radius: 6px; text-decoration: none; color: var(--text); }
+    .pagination a:hover { background: var(--hw-light-gray); }
+    .pagination .current { background: var(--hw-red); color: #fff; border-color: var(--hw-red); }
+    .pagination .disabled { color: var(--text-faint); pointer-events: none; }
+    .empty { text-align: center; padding: 60px 20px; color: var(--text-faint); }
+
+    @media (max-width: 768px) {
+      .log-filter { flex-direction: column; align-items: stretch; }
+      .log-filter input, .log-filter select { width: 100%; }
+      .log-filter-actions { margin-left: 0; }
+
+      .table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-top: 16px;
+        border-radius: 8px;
+      }
+      .table-scroll table {
+        width: max-content;
+        min-width: 100%;
+        margin-top: 0;
+        font-size: 0.82rem;
+      }
+      .table-scroll th,
+      .table-scroll td {
+        padding: 8px 10px;
+        white-space: nowrap;
+      }
+      /* 覆盖 HTML 里 th 上的固定宽度，让内容撑开 */
+      .table-scroll th { width: auto !important; }
+
+      /* UA 列允许内部换行显示 */
+      .table-scroll td:nth-child(6) {
+        white-space: normal;
+        max-width: 220px;
+        word-break: break-all;
+        vertical-align: top;
+      }
+    }
+  </style>
+</head>
+<body data-lang="<%= lang %>">
+  <div class="admin-container">
+    <div class="admin-header">
+      <h1><%= t('logs.title') %><%= t('logs.countPrefix') %><%= total %><%= t('logs.countSuffix') %></h1>
+      <a href="/" class="btn btn-secondary"><%= t('admin.viewSite') %></a>
+    </div>
+
+    <%- include('../partials/admin-nav', { active: 'logs', csrfToken }) %>
+
+    <!-- 快捷筛选 -->
+    <div class="quick-filters">
+      <a href="/admin/logs" class="quick-btn <%= (!filterAction && !filterUser && !filterIp) ? 'active' : '' %>">
+        <i class="fas fa-list"></i> <%= t('logs.filter.all') %>
+      </a>
+      <a href="/admin/logs?action=login_success" class="quick-btn <%= filterAction === 'login_success' ? 'active' : '' %>">
+        <i class="fas fa-sign-in-alt"></i> <%= t('logs.filter.loginSuccess') %>
+      </a>
+      <a href="/admin/logs?action=login_fail" class="quick-btn <%= filterAction === 'login_fail' ? 'active' : '' %>">
+        <i class="fas fa-user-secret"></i> <%= t('logs.filter.loginFail') %>
+      </a>
+      <a href="/admin/logs?action=login_rate_limited" class="quick-btn <%= filterAction === 'login_rate_limited' ? 'active' : '' %>">
+        <i class="fas fa-shield-alt"></i> <%= t('logs.filter.rateLimited') %>
+      </a>
+    </div>
+
+    <!-- 详细筛选 -->
+    <form method="GET" class="log-filter">
+      <label><%= t('logs.filter.action') %></label>
+      <select name="action">
+        <option value=""><%= t('logs.filter.all') %></option>
+        <optgroup label="<%= t('logs.optgroup.login') %>">
+          <option value="login_success"        <%= filterAction === 'login_success'        ? 'selected' : '' %>><%= t('logs.option.login_success') %></option>
+          <option value="login_fail"           <%= filterAction === 'login_fail'           ? 'selected' : '' %>><%= t('logs.option.login_fail') %></option>
+          <option value="login_fail_empty"     <%= filterAction === 'login_fail_empty'     ? 'selected' : '' %>><%= t('logs.option.login_fail_empty') %></option>
+          <option value="login_fail_nouser"    <%= filterAction === 'login_fail_nouser'    ? 'selected' : '' %>><%= t('logs.option.login_fail_nouser') %></option>
+          <option value="login_fail_disabled"  <%= filterAction === 'login_fail_disabled'  ? 'selected' : '' %>><%= t('logs.option.login_fail_disabled') %></option>
+          <option value="login_rate_limited"   <%= filterAction === 'login_rate_limited'   ? 'selected' : '' %>><%= t('logs.option.login_rate_limited') %></option>
+          <option value="logout"               <%= filterAction === 'logout'               ? 'selected' : '' %>><%= t('logs.option.logout') %></option>
+        </optgroup>
+        <optgroup label="<%= t('logs.optgroup.post') %>">
+          <option value="create_post"          <%= filterAction === 'create_post'          ? 'selected' : '' %>><%= t('logs.option.create_post') %></option>
+          <option value="update_post"          <%= filterAction === 'update_post'          ? 'selected' : '' %>><%= t('logs.option.update_post') %></option>
+          <option value="delete_post"          <%= filterAction === 'delete_post'          ? 'selected' : '' %>><%= t('logs.option.delete_post') %></option>
+          <option value="restore_post"         <%= filterAction === 'restore_post'         ? 'selected' : '' %>><%= t('logs.option.restore_post') %></option>
+          <option value="purge_post"           <%= filterAction === 'purge_post'           ? 'selected' : '' %>><%= t('logs.option.purge_post') %></option>
+          <option value="empty_trash"          <%= filterAction === 'empty_trash'          ? 'selected' : '' %>><%= t('logs.option.empty_trash') %></option>
+        </optgroup>
+        <optgroup label="<%= t('logs.optgroup.other') %>">
+          <option value="update_settings"      <%= filterAction === 'update_settings'      ? 'selected' : '' %>><%= t('logs.option.update_settings') %></option>
+          <option value="update_banner"        <%= filterAction === 'update_banner'        ? 'selected' : '' %>><%= t('logs.option.update_banner') %></option>
+          <option value="upload_image"         <%= filterAction === 'upload_image'         ? 'selected' : '' %>><%= t('logs.option.upload_image') %></option>
+          <option value="clean_orphan_images"  <%= filterAction === 'clean_orphan_images'  ? 'selected' : '' %>><%= t('logs.option.clean_orphan_images') %></option>
+        </optgroup>
+      </select>
+
+      <label><%= t('logs.filter.user') %></label>
+      <input type="text" name="user" value="<%= filterUser %>" placeholder="<%= t('logs.filter.userPlaceholder') %>">
+
+      <label><%= t('logs.filter.ip') %></label>
+      <input type="text" name="ip" value="<%= filterIp %>" placeholder="<%= t('logs.filter.ipPlaceholder') %>">
+
+      <div class="log-filter-actions">
+        <button type="submit" class="btn btn-sm"><%= t('logs.filter.submit') %></button>
+        <a href="/admin/logs" class="btn btn-secondary btn-sm"><%= t('logs.filter.clear') %></a>
+      </div>
+    </form>
+
+    <%
+      const actionLabel = (action) => {
+        const label = t('logs.action.' + action);
+        return label === 'logs.action.' + action ? action : label;
+      };
+
+      function fmtTarget(action, target) {
+        return target || '—';
+      }
+
+      const qs = (p) => {
+        const q = new URLSearchParams();
+        if (filterAction) q.set('action', filterAction);
+        if (filterUser)   q.set('user', filterUser);
+        if (filterIp)     q.set('ip', filterIp);
+        q.set('page', p);
+        return '?' + q.toString();
+      };
+    %>
+
+    <% if (logs.length === 0) { %>
+      <div class="empty">
+        <% if (filterAction || filterUser || filterIp) { %>
+          <%= t('logs.empty.filtered') %>
+        <% } else { %>
+          <%= t('logs.empty.none') %>
+        <% } %>
+      </div>
+    <% } else { %>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:60px;">ID</th>
+              <th style="width:110px;"><%= t('logs.col.user') %></th>
+              <th style="width:160px;"><%= t('logs.col.action') %></th>
+              <th style="width:180px;"><%= t('logs.col.target') %></th>
+              <th style="width:130px;">IP</th>
+              <th>User-Agent</th>
+              <th style="width:160px;"><%= t('logs.col.time') %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% logs.forEach(l => { %>
+              <tr>
+                <td><%= l.id %></td>
+                <td><%= l.username || '—' %></td>
+                <td>
+                  <span class="action action-<%= l.action %>" title="<%= l.action %>">
+                    <%= actionLabel(l.action) %>
+                  </span>
+                </td>
+                <td><%= fmtTarget(l.action, l.target) %></td>
+                <td><%= l.ip || '—' %></td>
+                <td><%= l.user_agent || '—' %></td>
+                <td><%= fmtTime(l.created_at) %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <% if (totalPages > 1) { %>
+        <div class="pagination">
+          <% if (page > 1) { %>
+            <a href="<%= qs(page - 1) %>">« <%= t('logs.pagination.prev') %></a>
+          <% } else { %>
+            <span class="disabled">« <%= t('logs.pagination.prev') %></span>
+          <% } %>
+
+          <span class="current"><%= page %> / <%= totalPages %></span>
+
+          <% if (page < totalPages) { %>
+            <a href="<%= qs(page + 1) %>"><%= t('logs.pagination.next') %> »</a>
+          <% } else { %>
+            <span class="disabled"><%= t('logs.pagination.next') %> »</span>
+          <% } %>
+        </div>
+      <% } %>
+    <% } %>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script src="/js/toast.js"></script>
+</body>
+</html>

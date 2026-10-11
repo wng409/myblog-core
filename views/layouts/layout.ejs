@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="<%= locals.darkMode ? 'dark' : '' %>">
+<head>
+  <%- include('../partials/theme-init') %>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= locals.titleKey ? t(locals.titleKey) + ' · ' + siteName : (locals.title ? locals.title + ' · ' + siteName : siteName) %></title>
+  <link rel="stylesheet" href="/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+</head>
+<body>
+  <!-- 顶部导航栏 -->
+  <header>
+  <div class="container header-container">
+    <div class="logo">
+      <i class="fas fa-feather-alt"></i>
+      <a href="/"><span><%= siteName %></span></a>
+    </div>
+
+    <!-- PC 横向导航 -->
+    <nav class="pc-nav">
+      <a href="/"><%= t('nav.home') %></a>
+      <a href="/posts"><%= t('nav.posts') %></a>
+    </nav>
+
+    <div class="nav-right">
+      <%- include('../partials/theme-switch', { variant: 'pc', id: 'themeTogglePc' }) %>
+      <button class="search-toggle" id="searchToggle" type="button" aria-label="<%= t('nav.search') %>">
+        <i class="fas fa-search"></i>
+      </button>
+      <button class="menu-toggle" id="menuToggle" type="button" aria-label="<%= t('nav.menu') %>">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+  </div>
+</header>
+
+  <!-- 全屏菜单 -->
+  <div class="mobile-menu" id="mobileMenu">
+    <div class="mobile-menu-header">
+      <div class="logo">
+        <i class="fas fa-feather-alt"></i>
+        <span><%= siteName %></span>
+      </div>
+      <button class="menu-close" id="menuClose" type="button" aria-label="<%= t('nav.close') %>">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <ul class="mobile-menu-list">
+      <li><a href="/"><%= t('nav.home') %><span class="arrow">›</span></a></li>
+      <li><a href="/posts"><%= t('nav.posts') %><span class="arrow">›</span></a></li>
+    </ul>
+
+    <div class="mobile-menu-footer">
+      <%- include('../partials/theme-switch', { variant: 'mobile', id: 'themeToggleMobile' }) %>
+    </div>
+  </div>
+
+  <!-- 页面内容 -->
+  <main>
+    <%- body %>
+  </main>
+
+  <!-- 底部栏 -->
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-column">
+          <h3><%= t('footer.quickLinks') %></h3>
+          <ul class="footer-links">
+            <li><a href="/"><%= t('nav.home') %></a></li>
+            <li><a href="/posts"><%= t('nav.posts') %></a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h3><%= siteName %></h3>
+          <ul class="footer-links">
+            <li><%= t('footer.builtWith') %></li>
+          </ul>
+        </div>
+      </div>
+      <div class="copyright">
+        <p>&copy; <%= new Date().getFullYear() %> <%= siteName %>. Powered by Node.js.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>

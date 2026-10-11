@@ -1,0 +1,30 @@
+
+<section class="page-title" style="padding:40px 0;">
+  <div class="container">
+    <h1><%= post.title %></h1>
+    <div style="color:var(--hw-medium-gray); margin-top:10px;">
+      <span><i class="far fa-calendar"></i> <%= new Date(post.created_at).toISOString().slice(0,10) %></span>
+      <% if (post.tags) { %>
+        <span style="margin-left:20px;"><i class="fas fa-tags"></i> <%= post.tags %></span>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<section class="articles-content" style="padding-top:0;">
+  <div class="container">
+    <article class="article-item" style="padding:40px;">
+      <div class="article-body">
+        <%- post.htmlContent %>
+      </div>
+      <% if (post.bilibili_embed) { %>
+        <div style="margin:30px 0; position:relative; padding-bottom:56.25%; height:0;">
+          <iframe src="<%= post.bilibili_embed %>" style="position:absolute; top:0; left:0; width:100%; height:100%;" allowfullscreen></iframe>
+        </div>
+      <% } %>
+      <div class="article-footer" style="margin-top:30px; border-top:1px solid var(--hw-border); padding-top:20px;">
+        <a href="/posts" class="project-link"><i class="fas fa-arrow-left"></i> <%= t('posts.backToList') %></a>
+      </div>
+    </article>
+  </div>
+</section>
