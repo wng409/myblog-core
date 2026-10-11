@@ -172,7 +172,48 @@ WAL 模式下请使用 SQLite 官方备份命令，不要直接 `cp` 主库文�
 sqlite3 db/database.sqlite ".backup 'db/backup-$(date +%Y%m%d-%H%M%S).sqlite'"
 ```
 
+## 本地化的第三方前端资源与开源许可
+
+为摆脱对公共 CDN 的运行时依赖，实现真正的离线可用与更严格的 CSP，本仓库将原本通过 CDN 引入的前端资源全部**本地化自托管**，其开源许可声明如下。
+
+| 资源 | 本地路径 | 版本 | 来源 | 许可 |
+| --- | --- | --- | --- | --- |
+| Font Awesome Free | `public/css/all.min.css`、`public/webfonts/*` | 6.4.0 | 原经 Cloudflare CDN（cdnjs）引入 | 代码 MIT；图标 CC BY 4.0；字体 SIL OFL 1.1 |
+| EasyMDE | `public/css/easymde.min.css`、`public/js/easymde.min.js` | 2.18.0 | 原经 CDN 引入 | MIT |
+
+### MIT License
+
+以下 MIT 协议适用于上表资源中采用 MIT 许可的代码，版权归各原作者所有：
+
+- EasyMDE — Copyright (c) Jeroen Akkerman
+- Font Awesome Free（代码部分）— Copyright (c) Fonticons, Inc.
+
+```text
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+> Font Awesome 说明：代码采用 MIT 许可，图标采用 CC BY 4.0，字体采用 SIL OFL 1.1，详见 https://fontawesome.com/license/free。
+
 ## 许可与协议
 
 - **本仓库（myblog-core）**：以 [MIT](./LICENSE) 许可开源，可自由使用、修改、分发。
 - **上游完整项目**：个人私有项目（Proprietary），永久闭源。本仓库不包含其完整源码、部署脚本与私有配置，未经作者明确书面许可，禁止复制、修改、分发或用于任何商业用途。
+- **本地化第三方资源**：见[本地化的第三方前端资源与开源许可](#本地化的第三方前端资源与开源许可)。

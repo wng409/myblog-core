@@ -172,7 +172,48 @@ In WAL mode, use the official SQLite backup command. Do not directly `cp` the ma
 sqlite3 db/database.sqlite ".backup 'db/backup-$(date +%Y%m%d-%H%M%S).sqlite'"
 ```
 
+## Bundled Third-Party Assets & Licenses
+
+To avoid any runtime dependency on public CDNs — enabling true offline use and a stricter CSP — this repository **localizes (self-hosts)** every front-end asset that was originally loaded from a CDN. Their open-source licenses are declared below.
+
+| Asset | Local Path | Version | Origin | License |
+| --- | --- | --- | --- | --- |
+| Font Awesome Free | `public/css/all.min.css`, `public/webfonts/*` | 6.4.0 | Originally loaded via the Cloudflare CDN (cdnjs) | Code: MIT; Icons: CC BY 4.0; Fonts: SIL OFL 1.1 |
+| EasyMDE | `public/css/easymde.min.css`, `public/js/easymde.min.js` | 2.18.0 | Originally loaded via CDN | MIT |
+
+### MIT License
+
+Applies to the MIT-licensed code of the assets listed above; copyright remains with the original authors:
+
+- EasyMDE — Copyright (c) Jeroen Akkerman
+- Font Awesome Free (code) — Copyright (c) Fonticons, Inc.
+
+```text
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+> Font Awesome note: the code is MIT-licensed, while icons are licensed under CC BY 4.0 and fonts under SIL OFL 1.1. See https://fontawesome.com/license/free for details.
+
 ## License
 
 - **This Repository (myblog-core)**: Open-sourced under the [MIT](./LICENSE) License. Free to use, modify, and distribute.
+- **Bundled Third-Party Assets**: See [Bundled Third-Party Assets & Licenses](#bundled-third-party-assets--licenses).
 - **Upstream Complete Project**: Personal private project (Proprietary), permanently closed-source. This repository does not contain its complete source code, deployment scripts, or private configurations. Unauthorized copying, modification, distribution, or commercial use is strictly prohibited without explicit written permission from the author.
