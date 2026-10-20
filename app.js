@@ -30,6 +30,25 @@ if (!process.env.SESSION_SECRET) {
 const window = new JSDOM('').window;
 const DOMPurify = createDOMPurify(window);
 
+// Markdown 渲染缓存（避免每次访问 /posts/:slug 都全量解析）
+const mdCache = new Map();
+const MD_CACHE_MAX = 100;
+
+function renderMarkdownCached(content, updated_at, slug) {
+  const cacheKey = `${slug}_${updated_at}`;
+  if (mdCache.has(cacheKey)) {
+    return mdCache.get(cacheKey);
+  }
+  const html = DOMPurify.sanitize(md.render(content || ''));
+  if (mdCache.size >= MD_CACHE_MAX) {
+    // 移除最早插入的一条
+    const firstKey = mdCache.keys().next().value;
+    mdCache.delete(firstKey);
+  }
+  mdCache.set(cacheKey, html);
+  return html;
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -141,6 +160,7 @@ function extractUploadRefs(text) {
   m.forEach(raw => {
     let u = raw.split('?')[0].split('#')[0];
     u = u.replace(/[，。、；：！？（）【】《》「」‘’“”…—,.;:!?()[\]{}]+$/g, '');
+    if (u.includes('..')) return;
     if (u && u.startsWith('/uploads/')) refs.add(u);
   });
   return refs;
@@ -173,10 +193,12 @@ function deleteRemovedImages(oldPost, newCover, newContent, req) {
 
   removed.forEach(ref => {
     if (!ref.startsWith('/uploads/')) return;
+    if (ref.includes('..')) return;
+    const full = path.resolve(PUBLIC_DIR, '.' + ref);
+    if (!full.startsWith(UPLOADS_DIR + path.sep)) return;
     isImageReferencedByOthers(ref, oldPost.id, (used) => {
       if (used) return;
       try {
-        const full = path.join(PUBLIC_DIR, ref);
         if (fs.existsSync(full)) {
           fs.unlinkSync(full);
           if (req) logAction(req, 'delete_image', ref);
@@ -305,6 +327,10 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+app.use((req, res, next) => {
+  if (req.path.startsWith('/_tmp/')) return res.status(404).end();
+  next();
+});
 app.use(express.static(PUBLIC_DIR));
 app.set('view engine', 'ejs');
 app.set('views', path.join(ROOT_DIR, 'views'));
@@ -361,8 +387,7 @@ const csrfProtection = csrf({
     sameSite: 'lax'
   },
   value: (req) => {
-    return (req.query && req.query._csrf) ||
-           req.headers['csrf-token'] ||
+    return req.headers['csrf-token'] ||
            req.headers['x-csrf-token'] ||
            (req.body && req.body._csrf);
   }
@@ -393,6 +418,17 @@ const authAndCsrf = [authOnly, csrfProtection];
 const sanitizeString = (str) => {
   if (typeof str !== 'string') return str;
   return DOMPurify.sanitize(str.trim(), { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+};
+
+// URL 白名单：仅允许站内相对路径（/ 开头）或 https:// 绝对地址
+const sanitizeUrl = (url) => {
+  if (typeof url !== 'string') return '';
+  const s = url.trim();
+  if (!s) return '';
+  if (/^[\/\\]{2}/.test(s)) return '';   // 拒绝协议相对 URL（//、/\、\\、\/）
+  if (s.startsWith('/')) return s;
+  if (/^https:\/\//i.test(s)) return s;
+  return '';
 };
 
 app.use((req, res, next) => {
@@ -570,7 +606,7 @@ app.get('/posts', (req, res) => {
 app.get('/posts/:slug', (req, res) => {
   getPostBySlug(req.params.slug, (err, post) => {
     if (err || !post) return res.status(404).send(users.errorPage({ status: 404, title: i18n.t(currentLang, 'error.404.title'), message: i18n.t(currentLang, 'error.404.message'), lang: currentLang }));
-    post.htmlContent = md.render(post.content || '');
+    post.htmlContent = renderMarkdownCached(post.content, post.updated_at, post.slug);
     getAllTags((err, tags) => {
       if (err) tags = [];
       res.render('posts/detail', {
@@ -744,15 +780,16 @@ app.post('/admin/posts', authOnly, upload.single('cover_image'), csrfProtection,
   const { title, slug, content, tags, bilibili_embed, cover_image_url } = req.body;
   const finalSlug = slug || (title || '').replace(/\s+/g, '-').toLowerCase();
   const now = new Date().toISOString();
+  const safeBilibili = sanitizeUrl(bilibili_embed);
 
   let cover_image = '';
   if (req.file) cover_image = fileUrl(req.file);
-  else if (cover_image_url) cover_image = cover_image_url;
+  else if (cover_image_url) cover_image = sanitizeUrl(cover_image_url);
 
   db.run(
     `INSERT INTO posts (title, slug, content, tags, cover_image, bilibili_embed, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [title, finalSlug, content, tags, cover_image, bilibili_embed, now, now],
+    [title, finalSlug, content, tags, cover_image, safeBilibili, now, now],
     function(err) {
       if (err) return res.status(500).send(i18n.t(currentLang, 'posts.err.saveFailed') + err.message);
       logAction(req, 'create_post', `post:${this.lastID}`);
@@ -772,14 +809,15 @@ app.post('/admin/posts/:id', authOnly, upload.single('cover_image'), csrfProtect
     const { title, slug, content, tags, bilibili_embed, existing_cover, cover_image_url } = req.body;
     const finalSlug = slug || (title || '').replace(/\s+/g, '-').toLowerCase();
     const now = new Date().toISOString();
+    const safeBilibili = sanitizeUrl(bilibili_embed);
 
-    let newCover = existing_cover || '';
+    let newCover = sanitizeUrl(existing_cover);
     if (req.file) newCover = fileUrl(req.file);
-    else if (cover_image_url) newCover = cover_image_url;
+    else if (cover_image_url) newCover = sanitizeUrl(cover_image_url);
 
     db.run(
       `UPDATE posts SET title=?, slug=?, content=?, tags=?, cover_image=?, bilibili_embed=?, updated_at=? WHERE id=? AND deleted_at IS NULL`,
-      [title, finalSlug, content, tags, newCover, bilibili_embed, now, req.params.id],
+      [title, finalSlug, content, tags, newCover, safeBilibili, now, req.params.id],
       function(err) {
         if (err) return res.status(500).send(i18n.t(currentLang, 'posts.err.updateFailed') + err.message);
         logAction(req, 'update_post', `post:${req.params.id}`);
@@ -919,7 +957,10 @@ app.post('/admin/settings', authOnly, csrfProtection, (req, res) => {
   try {
     if (bannerItems) {
       const parsed = typeof bannerItems === 'string' ? JSON.parse(bannerItems) : bannerItems;
-      if (Array.isArray(parsed)) bannerJson = JSON.stringify(parsed);
+      if (Array.isArray(parsed)) {
+        const safe = parsed.map(item => Object.assign({}, item, { image: sanitizeUrl(item && item.image) }));
+        bannerJson = JSON.stringify(safe);
+      }
     }
     if (featuredIds) {
       const parsed = typeof featuredIds === 'string' ? JSON.parse(featuredIds) : featuredIds;
@@ -944,7 +985,9 @@ app.post('/admin/settings/banner', authOnly, csrfProtection, (req, res) => {
       ? JSON.parse(req.body.bannerItems) : req.body.bannerItems;
   } catch (e) { return res.status(400).json({ success: false, error: i18n.t(currentLang, 'admin.settings.err.invalidData') }); }
   if (!Array.isArray(parsed)) return res.status(400).json({ success: false, error: i18n.t(currentLang, 'admin.settings.err.invalidData') });
-  const cleaned = parsed.filter(item => item.postId || item.title || item.image);
+  const cleaned = parsed
+    .filter(item => item.postId || item.title || item.image)
+    .map(item => Object.assign({}, item, { image: sanitizeUrl(item && item.image) }));
   db.run(
     `UPDATE settings SET banner_images = ? WHERE id = 1`,
     [JSON.stringify(cleaned)],
@@ -1025,6 +1068,10 @@ app.use((req, res) => {
 // 统一错误处理
 // ============================================================
 app.use((err, req, res, next) => {
+  if (res.headersSent) {
+    return next(err);
+  }
+
   console.error(err.stack);
 
   const t = (k) => i18n.t(currentLang, k);
