@@ -498,7 +498,10 @@ app.post('/admin/upload/image', authOnly, upload.single('image'), csrfProtection
 });
 
 // ========== 工具函数 ==========
-const getPosts = (cb) => db.all('SELECT * FROM posts WHERE deleted_at IS NULL ORDER BY created_at DESC', cb);
+// 列表/卡片场景所需字段（不含正文 content，避免列表查询白读全文）
+const POST_LIST_FIELDS = 'id, title, slug, tags, cover_image, bilibili_embed, created_at, updated_at';
+
+const getPosts = (cb) => db.all(`SELECT ${POST_LIST_FIELDS} FROM posts WHERE deleted_at IS NULL ORDER BY created_at DESC`, cb);
 const getPostBySlug = (slug, cb) => db.get('SELECT * FROM posts WHERE slug = ? AND deleted_at IS NULL', [slug], cb);
 const getPostById = (id, cb) => db.get('SELECT * FROM posts WHERE id = ? AND deleted_at IS NULL', [id], cb);
 const getSetting = (cb) => db.get('SELECT * FROM settings WHERE id = 1', cb);
@@ -512,7 +515,7 @@ const getAllTags = (cb) => {
     cb(null, Array.from(tagSet));
   });
 };
-const getTrashPosts = (cb) => db.all('SELECT * FROM posts WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC', cb);
+const getTrashPosts = (cb) => db.all(`SELECT ${POST_LIST_FIELDS}, deleted_at FROM posts WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC`, cb);
 const getDeletedPostById = (id, cb) => db.get('SELECT * FROM posts WHERE id = ? AND deleted_at IS NOT NULL', [id], cb);
 const countTrash = (cb) => db.get('SELECT COUNT(*) AS c FROM posts WHERE deleted_at IS NOT NULL', cb);
 
@@ -527,12 +530,12 @@ app.get('/', (req, res) => {
 
     const placeholders = featuredIds.map(() => '?').join(',');
     const sql = featuredIds.length > 0
-      ? `SELECT * FROM posts WHERE id IN (${placeholders}) AND deleted_at IS NULL ORDER BY created_at DESC`
-      : 'SELECT * FROM posts WHERE 1=0';
+      ? `SELECT ${POST_LIST_FIELDS} FROM posts WHERE id IN (${placeholders}) AND deleted_at IS NULL ORDER BY created_at DESC`
+      : `SELECT ${POST_LIST_FIELDS} FROM posts WHERE 1=0`;
 
     db.all(sql, featuredIds, (err, featuredPosts) => {
       if (err) featuredPosts = [];
-      db.all('SELECT * FROM posts WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT 10', (err, latestPosts) => {
+      db.all(`SELECT ${POST_LIST_FIELDS} FROM posts WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT 10`, (err, latestPosts) => {
         if (err) latestPosts = [];
 
         const finish = (bannerPosts) => {
@@ -550,7 +553,7 @@ app.get('/', (req, res) => {
           const postIds = bannerItems.map(item => item.postId).filter(id => id);
           if (postIds.length > 0) {
             const placeholders2 = postIds.map(() => '?').join(',');
-            db.all(`SELECT * FROM posts WHERE id IN (${placeholders2}) AND deleted_at IS NULL`, postIds, (err, posts) => {
+            db.all(`SELECT id, title, slug, cover_image FROM posts WHERE id IN (${placeholders2}) AND deleted_at IS NULL`, postIds, (err, posts) => {
               const postMap = {};
               (posts || []).forEach(p => postMap[p.id] = p);
               bannerItems.forEach(item => {
@@ -893,7 +896,7 @@ app.post('/admin/posts/purge/:id', authAndCsrf, (req, res) => {
 });
 
 app.post('/admin/posts/trash/empty', authAndCsrf, (req, res) => {
-  getTrashPosts((err, posts) => {
+  db.all('SELECT * FROM posts WHERE deleted_at IS NOT NULL', (err, posts) => {
     if (err) posts = [];
     db.run('DELETE FROM posts WHERE deleted_at IS NOT NULL', function (err) {
       if (err) return res.redirect('/admin/posts/trash?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.trash.err.emptyFailed')));
