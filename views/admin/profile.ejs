@@ -7,32 +7,7 @@
   <title><%= t('profile.title') %></title>
   <link rel="stylesheet" href="/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
-  <style>
-    .admin-container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
-    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-    .admin-header h1 { color: var(--hw-red); }
-    .btn { display: inline-block; padding: 10px 20px; background: var(--hw-red); color: white; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; }
-    .btn:hover { background: #c4000f; }
-    .btn-secondary { background: var(--hw-medium-gray); }
-    .admin-nav { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; align-items: center; }
-    .admin-nav a { color: var(--text); text-decoration: none; padding: 8px 16px; border-radius: 6px; }
-    .admin-nav a:hover { background: var(--hw-light-gray); }
-    .admin-nav a.active { background: var(--hw-light-gray); font-weight: 500; }
-    .admin-nav form { display: inline; margin: 0; }
-    .admin-nav form button { color: var(--text); background: none; border: none; cursor: pointer; padding: 8px 16px; border-radius: 6px; font-size: 1rem; }
-    .admin-nav form button:hover { background: var(--hw-light-gray); }
-    .card { background: var(--card-bg); border: 1px solid var(--hw-border); border-radius: 8px; padding: 24px; margin-bottom: 24px; }
-    .card h2 { margin-bottom: 16px; color: var(--hw-red); }
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; margin-bottom: 6px; font-weight: 500; }
-    .form-group input { width: 100%; padding: 10px; border: 1px solid var(--hw-border); border-radius: 6px; font-size: 1rem; }
-    .info-row { display: flex; padding: 8px 0; border-bottom: 1px solid var(--border); }
-    .info-row .label { width: 120px; color: var(--text-muted); }
-    .info-row .value { flex: 1; }
-    .alert { padding: 12px; border-radius: 6px; margin-bottom: 16px; }
-    .alert-success { background: #d4edda; color: #155724; }
-    .alert-error { background: #f8d7da; color: #721c24; }
-  </style>
+  <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body data-lang="<%= lang %>">
   <div class="admin-container">

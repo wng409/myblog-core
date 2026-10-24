@@ -7,32 +7,7 @@
   <title><%= t('admin.dashboard.title') %></title>
   <link rel="stylesheet" href="/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
-  <style>
-    .admin-container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
-    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-    .admin-header h1 { color: var(--hw-red); }
-    .btn { display: inline-block; padding: 10px 20px; background: var(--hw-red); color: white; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; }
-    .btn:hover { background: #c4000f; }
-    .btn-secondary { background: var(--hw-medium-gray); }
-    .btn-secondary:hover { background: #555; }
-    .admin-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    .admin-table th, .admin-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--hw-border); }
-    .admin-table th { background: var(--hw-light-gray); }
-    .admin-nav { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; align-items: center; }
-    .admin-nav a { color: var(--text); text-decoration: none; padding: 8px 16px; border-radius: 6px; }
-    .admin-nav a:hover { background: var(--hw-light-gray); }
-    .admin-nav a.active { background: var(--hw-light-gray); font-weight: 500; }
-    .admin-nav form { display: inline; margin: 0; }
-    .admin-nav form button { color: var(--text); background: none; border: none; cursor: pointer; padding: 8px 16px; border-radius: 6px; font-size: 1rem; }
-    .admin-nav form button:hover { background: var(--hw-light-gray); }
-    .action-link { color: var(--hw-red); margin-right: 10px; text-decoration: none; }
-    .action-link:hover { text-decoration: underline; }
-    .delete-btn { background: none; border: none; color: var(--hw-red); cursor: pointer; padding: 0; font-size: 1rem; }
-    .delete-btn:hover { text-decoration: underline; }
-    .alert { padding: 12px; border-radius: 6px; margin-bottom: 16px; }
-    .alert-success { background: #d4edda; color: #155724; }
-    .alert-error { background: #f8d7da; color: #721c24; }
-  </style>
+  <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body data-lang="<%= lang %>">
   <div class="admin-container">
