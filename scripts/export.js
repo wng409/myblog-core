@@ -43,6 +43,9 @@ const HOME_FEATURED_LIMIT = 3;    // 首页“推荐文章”条数（静态站�
 const HOME_BANNER_LIMIT = 5;      // 首页 Banner 条数（静态站由最新文章派生）
 const SITE_NAME = process.env.SITE_NAME || 'MyBlog';
 let CURRENT_SETTINGS = {};                  // 导出期站点个性化设置（main 中加载后注入模板）
+const SOCIAL_ICONS = { github: 'fab fa-github', email: 'fas fa-envelope', bilibili: 'fab fa-bilibili', zhihu: 'fab fa-zhihu', x: 'fab fa-x-twitter', telegram: 'fab fa-telegram', wechat: 'fab fa-weixin', link: 'fas fa-link' };
+const SOCIAL_LABELS = { github: 'GitHub', email: 'Email', bilibili: 'Bilibili', zhihu: '知乎', x: 'X', telegram: 'Telegram', wechat: '微信', link: '' };
+let SOCIAL_LINKS = [];                      // 导出期社交链接（已解析为数组）
 const LANG = i18n.DEFAULT_LANG;             // 导出默认使用中文
 const t = (key) => i18n.t(LANG, key);       // 导出期翻译函数（注入模板）
 
@@ -107,7 +110,12 @@ function rewriteInternalLinks(html) {
 async function renderBody(view, data) {
   return ejs.renderFile(
     path.join(VIEWS_DIR, view),
-    Object.assign({ isStatic: true, fmtTime, t, settings: CURRENT_SETTINGS }, data)
+    Object.assign({
+      isStatic: true, fmtTime, t,
+      settings: Object.assign({}, CURRENT_SETTINGS, { social_links: SOCIAL_LINKS }),
+      socialIcons: SOCIAL_ICONS,
+      socialLabels: SOCIAL_LABELS
+    }, data)
   );
 }
 
@@ -122,7 +130,9 @@ async function renderPage(view, data) {
       titleKey: data.titleKey,
       title: data.title || SITE_NAME,
       siteName: CURRENT_SETTINGS.site_title || SITE_NAME,
-      settings: CURRENT_SETTINGS,
+      settings: Object.assign({}, CURRENT_SETTINGS, { social_links: SOCIAL_LINKS }),
+      socialIcons: SOCIAL_ICONS,
+      socialLabels: SOCIAL_LABELS,
       // darkMode 不传：静态站无 session，服务端不输出 dark class，
       // 主题完全交给 head 内 theme-init 同步脚本处理（防闪烁）
       isStatic: true,
@@ -168,7 +178,8 @@ async function main() {
     ORDER BY created_at DESC`);
 
   // 2.1 站点个性化设置（标题/副标题/主题色/关于我/页脚），注入模板
-  CURRENT_SETTINGS = (await dbGet(db, 'SELECT site_title, site_subtitle, theme_color, about_bio, about_github, about_email, footer_text, footer_subtitle, site_logo, about_avatar FROM settings WHERE id = 1')) || {};
+  CURRENT_SETTINGS = (await dbGet(db, 'SELECT site_title, site_subtitle, theme_color, about_bio, about_github, about_email, social_links, footer_text, footer_subtitle, site_logo, about_avatar FROM settings WHERE id = 1')) || {};
+  try { const arr = JSON.parse(CURRENT_SETTINGS.social_links || '[]'); SOCIAL_LINKS = Array.isArray(arr) ? arr : []; } catch (e) { SOCIAL_LINKS = []; }
 
   // 3. 生成 dist/api/posts.json（剔除正文大字段，只留搜索所需）
   //    正文单独一次性查出建立 contentMap（第 6 步详情页复用，避免 N+1）

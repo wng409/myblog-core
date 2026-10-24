@@ -110,7 +110,8 @@ db.serialize(() => {
     ['footer_subtitle', "TEXT DEFAULT ''"],
     ['about_avatar', "TEXT DEFAULT ''"],
     ['about_github', "TEXT DEFAULT ''"],
-    ['about_email', "TEXT DEFAULT ''"]
+    ['about_email', "TEXT DEFAULT ''"],
+    ['social_links', "TEXT DEFAULT '[]'"]
   ].forEach(([col, def]) => {
     db.run(`ALTER TABLE settings ADD COLUMN ${col} ${def}`, (err) => {
       if (err && !/duplicate column/i.test(err.message)) {
@@ -131,8 +132,10 @@ users.initUserTables(db);
 // 站点个性化设置（启动加载；后台保存后调用 loadSiteSettings 刷新）
 let siteSettings = {};
 function loadSiteSettings(cb) {
-  db.get('SELECT site_lang, site_title, site_subtitle, theme_color, about_bio, about_github, about_email, footer_text, footer_subtitle, site_logo, about_avatar FROM settings WHERE id = 1', (err, row) => {
+  db.get('SELECT site_lang, site_title, site_subtitle, theme_color, about_bio, about_github, about_email, social_links, footer_text, footer_subtitle, site_logo, about_avatar FROM settings WHERE id = 1', (err, row) => {
     siteSettings = row || {};
+    // social_links 解析为数组供模板遍历（存储仍为 JSON 字符串）
+    siteSettings.social_links = safeParseJson(siteSettings.social_links);
     if (!err && row && i18n.LANGS.includes(row.site_lang)) {
       currentLang = row.site_lang;
     }
@@ -343,6 +346,9 @@ app.use((req, res, next) => {
   res.locals.lang = currentLang;
   res.locals.t = (key) => i18n.t(currentLang, key);
   res.locals.settings = siteSettings;
+  // 社交链接：图标与显示名映射（模板遍历 social_links 时使用）
+  res.locals.socialIcons = { github: 'fab fa-github', email: 'fas fa-envelope', bilibili: 'fab fa-bilibili', zhihu: 'fab fa-zhihu', x: 'fab fa-x-twitter', telegram: 'fab fa-telegram', wechat: 'fab fa-weixin', link: 'fas fa-link' };
+  res.locals.socialLabels = { github: 'GitHub', email: 'Email', bilibili: 'Bilibili', zhihu: '知乎', x: 'X', telegram: 'Telegram', wechat: '微信', link: '' };
   next();
 });
 
@@ -1016,6 +1022,18 @@ const SITE_FIELD_SETTERS = {
   about_bio:       (v) => String(v == null ? '' : v).trim().slice(0, 1000),
   about_github:    (v) => String(v == null ? '' : v).trim().slice(0, 200),
   about_email:     (v) => String(v == null ? '' : v).trim().slice(0, 200),
+  // 社交链接：前端提交 JSON 数组（已清洗），此处再校验一次
+  social_links:    (v) => {
+    try {
+      const arr = JSON.parse(v);
+      if (!Array.isArray(arr)) return '[]';
+      const clean = arr.slice(0, 20).map((it) => ({
+        type: String((it && it.type) || 'link').trim().slice(0, 20),
+        url: String((it && it.url) || '').trim().slice(0, 300)
+      })).filter((it) => it.url);
+      return JSON.stringify(clean);
+    } catch (e) { return '[]'; }
+  },
   footer_text:     (v) => String(v == null ? '' : v).trim().slice(0, 200),
   footer_subtitle: (v) => String(v == null ? '' : v).trim().slice(0, 200),
   // 图片路径：仅接受站内绝对路径（由上传路由写入；此处允许手动清空）

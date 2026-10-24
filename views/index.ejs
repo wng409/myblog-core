@@ -96,7 +96,7 @@
   </div>
 </section>
 
-<% if (locals.settings && locals.settings.about_bio) { %>
+<% if (locals.settings && (locals.settings.about_bio || locals.settings.about_avatar || (locals.settings.social_links && locals.settings.social_links.length))) { %>
 <!-- ========== 关于我 ========== -->
 <section class="section section-light" id="about">
   <div class="container">
@@ -112,14 +112,16 @@
       <% } %>
       <div class="about-content">
         <p><%= locals.settings.about_bio %></p>
+        <% if (locals.settings.social_links && locals.settings.social_links.length) { %>
         <div class="about-links">
-          <% if (locals.settings.about_github) { %>
-            <a href="<%= locals.settings.about_github %>" class="about-link" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
-          <% } %>
-          <% if (locals.settings.about_email) { %>
-            <a href="<%= /^mailto:/.test(locals.settings.about_email) ? locals.settings.about_email : 'mailto:' + locals.settings.about_email %>" class="about-link"><i class="fas fa-envelope"></i> Email</a>
-          <% } %>
+          <% locals.settings.social_links.forEach(it => { %>
+            <a href="<%= it.type === 'email' ? (/^mailto:/.test(it.url) ? it.url : 'mailto:' + it.url) : it.url %>"
+               class="about-link" target="_blank" rel="noopener">
+              <i class="<%= locals.socialIcons[it.type] || 'fas fa-link' %>"></i> <%= locals.socialLabels[it.type] || '' %>
+            </a>
+          <% }) %>
         </div>
+        <% } %>
       </div>
     </div>
   </div>

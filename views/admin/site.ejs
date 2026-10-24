@@ -115,12 +115,32 @@
             <textarea id="aboutBioInput" name="about_bio" class="form-control" rows="4"><%= settings.about_bio || '' %></textarea>
           </div>
           <div class="form-group">
-            <label for="aboutGithubInput"><%= t('admin.settings.github') %></label>
-            <input type="text" id="aboutGithubInput" name="about_github" class="form-control" value="<%= settings.about_github || '' %>" placeholder="https://github.com/...">
-          </div>
-          <div class="form-group">
-            <label for="aboutEmailInput"><%= t('admin.settings.email') %></label>
-            <input type="text" id="aboutEmailInput" name="about_email" class="form-control" value="<%= settings.about_email || '' %>" placeholder="mailto:you@example.com">
+            <label><%= t('admin.settings.social') %></label>
+            <p class="hint"><%= t('admin.settings.socialDesc') %></p>
+            <div class="social-editor" id="socialEditor"
+                 data-links="<%= JSON.stringify(settings.social_links || []) %>"
+                 data-empty="<%= t('admin.settings.socialEmpty') %>"
+                 data-url-ph="<%= t('admin.settings.socialUrl') %>"
+                 data-remove="<%= t('admin.settings.remove') %>"
+                 data-custom="<%= t('admin.settings.socialCustom') %>"></div>
+            <input type="hidden" name="social_links" id="socialLinksInput" value="">
+            <template id="socialRowTpl">
+              <div class="social-row">
+                <select class="social-type">
+                  <option value="github">GitHub</option>
+                  <option value="email">Email</option>
+                  <option value="bilibili">Bilibili</option>
+                  <option value="zhihu">知乎</option>
+                  <option value="x">X</option>
+                  <option value="telegram">Telegram</option>
+                  <option value="wechat">微信</option>
+                  <option value="link"></option>
+                </select>
+                <input type="text" class="form-control social-url">
+                <button type="button" class="btn-sm btn-danger social-del"></button>
+              </div>
+            </template>
+            <button type="button" class="btn btn-secondary" id="socialAddBtn">+ <%= t('admin.settings.addSocial') %></button>
           </div>
         </div>
       </section>

@@ -1544,3 +1544,19 @@ textarea.form-control { height: auto; padding: 10px 12px; line-height: 1.5; resi
 @media (max-width: 420px) {
   .admin-nav { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ---------- 社交链接编辑器（动态行） ---------- */
+.social-editor { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.social-row { display: flex; gap: 10px; align-items: center; }
+.social-row .social-type {
+  flex: none; width: 130px; height: 40px; padding: 0 10px;
+  border: 1px solid var(--border-strong); border-radius: 6px;
+  background: var(--bg); color: var(--text); font: inherit;
+}
+.social-row .social-url { flex: 1; }
+.social-row .social-del { flex: none; }
+@media (max-width: 768px) {
+  .social-row { flex-wrap: wrap; }
+  .social-row .social-type { width: 100%; }
+  .social-row .social-url { width: 100%; }
+}

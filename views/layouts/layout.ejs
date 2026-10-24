@@ -8,7 +8,7 @@
   <title><%= locals.titleKey ? t(locals.titleKey) + ' · ' + SITE_TITLE : (locals.title ? locals.title + ' · ' + SITE_TITLE : SITE_TITLE) %></title>
   <link rel="stylesheet" href="/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" href="<%= (locals.settings && locals.settings.site_logo) || '/favicon.svg' %>">
   <%- include('../partials/brand-color') %>
 </head>
 <body>
@@ -65,6 +65,13 @@
 
     <div class="mobile-menu-footer">
       <%- include('../partials/theme-switch', { variant: 'mobile', id: 'themeToggleMobile' }) %>
+      <% if (locals.settings && locals.settings.social_links) { locals.settings.social_links.forEach(it => { %>
+        <a href="<%= it.type === 'email' ? (/^mailto:/.test(it.url) ? it.url : 'mailto:' + it.url) : it.url %>"
+           target="_blank" rel="noopener" class="circle-btn">
+          <i class="<%= locals.socialIcons[it.type] || 'fas fa-link' %>"></i>
+          <span><%= locals.socialLabels[it.type] || '' %></span>
+        </a>
+      <% }) } %>
     </div>
   </div>
 
@@ -93,6 +100,16 @@
           </ul>
         </div>
       </div>
+      <% if (locals.settings && locals.settings.social_links && locals.settings.social_links.length) { %>
+      <div class="social-links">
+        <% locals.settings.social_links.forEach(it => { %>
+          <a href="<%= it.type === 'email' ? (/^mailto:/.test(it.url) ? it.url : 'mailto:' + it.url) : it.url %>"
+             target="_blank" rel="noopener" class="social-link" title="<%= locals.socialLabels[it.type] || '' %>">
+            <i class="<%= locals.socialIcons[it.type] || 'fas fa-link' %>"></i>
+          </a>
+        <% }) %>
+      </div>
+      <% } %>
       <div class="copyright">
         <p>&copy; <%= new Date().getFullYear() %> <%= (locals.settings && locals.settings.footer_text) || (SITE_TITLE + '. Powered by Node.js.') %></p>
       </div>

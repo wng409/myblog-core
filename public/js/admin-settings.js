@@ -191,3 +191,60 @@ document.addEventListener('DOMContentLoaded', function () {
   bindPreview('siteLogoFile', '.settings-form .settings-block:nth-of-type(2) .modern-upload .preview');
   bindPreview('aboutAvatarFile', '.settings-form .settings-block:nth-of-type(3) .modern-upload .preview');
 })();
+
+// 站点设置：社交链接动态列表（增删 + 同步到隐藏字段）
+(function () {
+  var editor = document.getElementById('socialEditor');
+  if (!editor) return;
+  var hidden = document.getElementById('socialLinksInput');
+  var tpl = document.getElementById('socialRowTpl');
+  var addBtn = document.getElementById('socialAddBtn');
+
+  var TYPES = ['github', 'email', 'bilibili', 'zhihu', 'x', 'telegram', 'wechat', 'link'];
+  var emptyText = editor.dataset.empty || '';
+  var urlPh = editor.dataset.urlPh || '';
+  var removeText = editor.dataset.remove || '';
+  var customText = editor.dataset.custom || '';
+
+  var links = [];
+  try { links = JSON.parse(editor.dataset.links || '[]'); } catch (e) { links = []; }
+  if (!Array.isArray(links)) links = [];
+
+  function sync() {
+    if (hidden) hidden.value = JSON.stringify(links);
+    editor.querySelectorAll('.social-row').forEach(function (row, i) {
+      row.querySelector('.social-type').value = TYPES.indexOf(links[i] && links[i].type) >= 0 ? links[i].type : 'link';
+      row.querySelector('.social-url').value = (links[i] && links[i].url) || '';
+    });
+  }
+
+  function addRow(data) {
+    var node = tpl.content.cloneNode(true);
+    var row = node.querySelector('.social-row');
+    var sel = node.querySelector('.social-type');
+    var url = node.querySelector('.social-url');
+    var del = node.querySelector('.social-del');
+    // 自定义链接选项文案
+    var customOpt = sel.querySelector('option[value="link"]');
+    if (customOpt) customOpt.textContent = customText || 'link';
+    if (urlPh) url.placeholder = urlPh;
+    if (removeText) del.textContent = removeText;
+    if (data) { sel.value = data.type || 'link'; url.value = data.url || ''; }
+    del.addEventListener('click', function () {
+      var idx = Array.prototype.indexOf.call(editor.querySelectorAll('.social-row'), row);
+      if (idx >= 0) { links.splice(idx, 1); row.remove(); sync(); }
+    });
+    sel.addEventListener('change', sync);
+    url.addEventListener('input', sync);
+    editor.appendChild(node);
+  }
+
+  // 初始渲染已有链接
+  links.forEach(function (it) { addRow(it); });
+  sync();
+
+  if (addBtn) addBtn.addEventListener('click', function () {
+    addRow({ type: 'github', url: '' });
+    sync();
+  });
+})();
