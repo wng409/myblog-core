@@ -7,8 +7,8 @@
   <title><%= t('admin.settings.title') %></title>
   <link rel="stylesheet" href="/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
-  <%- include('../partials/brand-color') %>
   <link rel="stylesheet" href="/css/admin.css">
+  <%- include('../partials/brand-color') %>
 </head>
 <body data-csrf="<%= csrfToken %>" data-upload-failed="<%= t('admin.banner.uploadFailed') %>" data-upload-invalid="<%= t('admin.banner.uploadInvalid') %>" data-lang="<%= lang %>">
   <div class="admin-container">
@@ -94,135 +94,137 @@
       </form>
     </div>
 
-    <!-- ===== 站点个性化：卡片式布局 ===== -->
-    <div class="settings-grid">
-      <!-- 卡片 1：基础信息 -->
-      <div class="setting-card">
-        <h3><%= t('admin.settings.basic') %></h3>
-        <form method="POST" action="/admin/settings/site">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <!-- ===== 站点设置：统一大表单（4 区块 + 单一 Sticky 保存）===== -->
+    <form method="POST" action="/admin/settings/site" enctype="multipart/form-data" class="settings-form" id="siteSettingsForm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <!-- 区块 1：基本设置 -->
+      <section class="settings-block">
+        <div class="block-head">
+          <h3><%= t('admin.settings.tabBasic') %></h3>
+          <p><%= t('admin.settings.basicDesc') %></p>
+        </div>
+        <div class="block-body">
           <div class="form-group">
             <label for="siteTitleInput"><%= t('admin.settings.siteTitle') %></label>
-            <input type="text" id="siteTitleInput" name="site_title" value="<%= settings.site_title || '' %>">
+            <input type="text" id="siteTitleInput" name="site_title" class="form-control" value="<%= settings.site_title || '' %>">
           </div>
           <div class="form-group">
             <label for="siteSubtitleInput"><%= t('admin.settings.siteSubtitle') %></label>
-            <input type="text" id="siteSubtitleInput" name="site_subtitle" value="<%= settings.site_subtitle || '' %>">
+            <input type="text" id="siteSubtitleInput" name="site_subtitle" class="form-control" value="<%= settings.site_subtitle || '' %>">
           </div>
-          <button type="submit" class="btn btn-primary"><%= t('admin.settings.saveSite') %></button>
-        </form>
-      </div>
-
-      <!-- 卡片 2：站点 Logo -->
-      <div class="setting-card">
-        <h3><%= t('admin.settings.logo') %></h3>
-        <div class="image-upload-preview">
-          <% if (settings.site_logo) { %>
-            <img src="<%= settings.site_logo %>" alt="logo">
-          <% } else { %>
-            <i class="fas fa-feather-alt placeholder-icon"></i>
-          <% } %>
         </div>
-        <p class="hint"><%= t('admin.settings.logoHint') %></p>
-        <form method="POST" action="/admin/settings/upload-logo" enctype="multipart/form-data" class="upload-row">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <div class="file-upload-wrapper">
-            <label class="file-upload-btn" for="logoFileInput"><%= t('admin.settings.chooseImage') %></label>
-            <input type="file" id="logoFileInput" name="logo" accept="image/*"
-                   onchange="document.getElementById('logoFileName').textContent = (this.files[0] && this.files[0].name) || ''">
-            <span class="file-name" id="logoFileName"></span>
-          </div>
-          <button type="submit" class="btn btn-primary"><%= t('admin.settings.uploadLogo') %></button>
-        </form>
-        <% if (settings.site_logo) { %>
-        <form method="POST" action="/admin/settings/site" class="inline-form">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <input type="hidden" name="site_logo" value="">
-          <button type="submit" class="btn-sm btn-secondary"><%= t('admin.settings.remove') %></button>
-        </form>
-        <% } %>
-      </div>
+      </section>
 
-      <!-- 卡片 3：外观设定 -->
-      <div class="setting-card">
-        <h3><%= t('admin.settings.appearance') %></h3>
-        <form method="POST" action="/admin/settings/site">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <!-- 区块 2：品牌外观 -->
+      <section class="settings-block">
+        <div class="block-head">
+          <h3><%= t('admin.settings.tabAppearance') %></h3>
+          <p><%= t('admin.settings.appearanceDesc') %></p>
+        </div>
+        <div class="block-body">
           <div class="form-group">
-            <label for="themeColorInput"><%= t('admin.settings.themeColor') %></label>
-            <div class="color-row">
-              <input type="color" id="themeColorInput" name="theme_color" value="<%= settings.theme_color || '#e60012' %>">
-              <input type="text" id="themeColorText" class="color-text" value="<%= settings.theme_color || '#e60012' %>" readonly>
-              <span class="color-preview" id="themeColorPreview" data-color="<%= settings.theme_color || '#e60012' %>"></span>
+            <label><%= t('admin.settings.logo') %></label>
+            <div class="modern-upload">
+              <div class="preview">
+                <% if (settings.site_logo) { %>
+                  <img src="<%= settings.site_logo %>" alt="logo">
+                <% } else { %>
+                  <i class="fas fa-feather-alt"></i>
+                <% } %>
+              </div>
+              <div class="actions">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('siteLogoFile').click()"><%= t('admin.settings.chooseImage') %></button>
+                <span class="hint"><%= t('admin.settings.logoHint') %></span>
+                <span class="file-name" id="siteLogoName"></span>
+                <% if (settings.site_logo) { %>
+                  <label class="remove-toggle"><input type="checkbox" name="remove_logo" value="1"> <%= t('admin.settings.remove') %></label>
+                <% } %>
+              </div>
+              <input type="file" id="siteLogoFile" name="site_logo_file" accept="image/*" hidden
+                     onchange="document.getElementById('siteLogoName').textContent = (this.files[0] && this.files[0].name) || '';">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="themeColorText"><%= t('admin.settings.themeColor') %></label>
+            <div class="input-group">
+              <span class="color-preview-box" id="themeColorBox">
+                <input type="color" id="themeColorInput" name="theme_color" value="<%= settings.theme_color || '#e60012' %>">
+              </span>
+              <input type="text" id="themeColorText" name="theme_color_text" class="form-control color-text-input" value="<%= settings.theme_color || '#e60012' %>" spellcheck="false">
             </div>
             <p class="hint"><%= t('admin.settings.themeColorHint') %></p>
           </div>
-          <button type="submit" class="btn btn-primary"><%= t('admin.settings.saveSite') %></button>
-        </form>
-      </div>
-
-      <!-- 卡片 4：关于我 -->
-      <div class="setting-card">
-        <h3><%= t('admin.settings.about') %></h3>
-        <div class="image-upload-preview avatar-preview">
-          <% if (settings.about_avatar) { %>
-            <img src="<%= settings.about_avatar %>" alt="avatar">
-          <% } else { %>
-            <i class="fas fa-user placeholder-icon"></i>
-          <% } %>
         </div>
-        <form method="POST" action="/admin/settings/upload-avatar" enctype="multipart/form-data" class="upload-row">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <div class="file-upload-wrapper">
-            <label class="file-upload-btn" for="avatarFileInput"><%= t('admin.settings.chooseImage') %></label>
-            <input type="file" id="avatarFileInput" name="avatar" accept="image/*"
-                   onchange="document.getElementById('avatarFileName').textContent = (this.files[0] && this.files[0].name) || ''">
-            <span class="file-name" id="avatarFileName"></span>
+      </section>
+
+      <!-- 区块 3：关于我 -->
+      <section class="settings-block">
+        <div class="block-head">
+          <h3><%= t('admin.settings.tabAbout') %></h3>
+          <p><%= t('admin.settings.aboutDesc') %></p>
+        </div>
+        <div class="block-body">
+          <div class="form-group">
+            <label><%= t('admin.settings.avatar') %></label>
+            <div class="modern-upload">
+              <div class="preview preview--round">
+                <% if (settings.about_avatar) { %>
+                  <img src="<%= settings.about_avatar %>" alt="avatar">
+                <% } else { %>
+                  <i class="fas fa-user"></i>
+                <% } %>
+              </div>
+              <div class="actions">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('aboutAvatarFile').click()"><%= t('admin.settings.chooseImage') %></button>
+                <span class="file-name" id="aboutAvatarName"></span>
+                <% if (settings.about_avatar) { %>
+                  <label class="remove-toggle"><input type="checkbox" name="remove_avatar" value="1"> <%= t('admin.settings.remove') %></label>
+                <% } %>
+              </div>
+              <input type="file" id="aboutAvatarFile" name="about_avatar_file" accept="image/*" hidden
+                     onchange="document.getElementById('aboutAvatarName').textContent = (this.files[0] && this.files[0].name) || '';">
+            </div>
           </div>
-          <button type="submit" class="btn btn-primary"><%= t('admin.settings.uploadAvatar') %></button>
-        </form>
-        <% if (settings.about_avatar) { %>
-        <form method="POST" action="/admin/settings/site" class="inline-form">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <input type="hidden" name="about_avatar" value="">
-          <button type="submit" class="btn-sm btn-secondary"><%= t('admin.settings.remove') %></button>
-        </form>
-        <% } %>
-        <form method="POST" action="/admin/settings/site">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <div class="form-group">
             <label for="aboutBioInput"><%= t('admin.settings.aboutBio') %></label>
-            <textarea id="aboutBioInput" name="about_bio" rows="4"><%= settings.about_bio || '' %></textarea>
+            <textarea id="aboutBioInput" name="about_bio" class="form-control" rows="4"><%= settings.about_bio || '' %></textarea>
           </div>
           <div class="form-group">
             <label for="aboutGithubInput"><%= t('admin.settings.github') %></label>
-            <input type="text" id="aboutGithubInput" name="about_github" value="<%= settings.about_github || '' %>" placeholder="https://github.com/...">
+            <input type="text" id="aboutGithubInput" name="about_github" class="form-control" value="<%= settings.about_github || '' %>" placeholder="https://github.com/...">
           </div>
           <div class="form-group">
             <label for="aboutEmailInput"><%= t('admin.settings.email') %></label>
-            <input type="text" id="aboutEmailInput" name="about_email" value="<%= settings.about_email || '' %>" placeholder="mailto:you@example.com">
+            <input type="text" id="aboutEmailInput" name="about_email" class="form-control" value="<%= settings.about_email || '' %>" placeholder="mailto:you@example.com">
           </div>
-          <button type="submit" class="btn btn-primary"><%= t('admin.settings.saveSite') %></button>
-        </form>
-      </div>
+        </div>
+      </section>
 
-      <!-- 卡片 5：页脚信息 -->
-      <div class="setting-card">
-        <h3><%= t('admin.settings.footer') %></h3>
-        <form method="POST" action="/admin/settings/site">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <!-- 区块 4：页脚设置 -->
+      <section class="settings-block">
+        <div class="block-head">
+          <h3><%= t('admin.settings.tabFooter') %></h3>
+          <p><%= t('admin.settings.footerDesc') %></p>
+        </div>
+        <div class="block-body">
           <div class="form-group">
             <label for="footerSubtitleInput"><%= t('admin.settings.footerSubtitleLabel') %></label>
-            <input type="text" id="footerSubtitleInput" name="footer_subtitle" value="<%= settings.footer_subtitle || '' %>">
+            <input type="text" id="footerSubtitleInput" name="footer_subtitle" class="form-control" value="<%= settings.footer_subtitle || '' %>">
           </div>
           <div class="form-group">
             <label for="footerTextInput"><%= t('admin.settings.copyrightLabel') %></label>
-            <input type="text" id="footerTextInput" name="footer_text" value="<%= settings.footer_text || '' %>">
+            <input type="text" id="footerTextInput" name="footer_text" class="form-control" value="<%= settings.footer_text || '' %>">
           </div>
-          <button type="submit" class="btn btn-primary"><%= t('admin.settings.saveSite') %></button>
-        </form>
+        </div>
+      </section>
+
+      <!-- Sticky 保存条：全页唯一保存按钮 -->
+      <div class="settings-savebar">
+        <span class="savebar-hint"><%= t('admin.settings.saveAll') %></span>
+        <button type="submit" class="btn btn-primary"><%= t('admin.settings.saveAll') %></button>
       </div>
-    </div>
+    </form>
 
     <!-- 语言 -->
     <div class="settings-section">

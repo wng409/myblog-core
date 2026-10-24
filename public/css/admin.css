@@ -1413,3 +1413,71 @@ input[type="color"] {
 /* 卡片内的说明与文件行 */
 .setting-card .file-upload-wrapper { margin-bottom: 0; }
 .setting-card .upload-row { margin-bottom: 12px; }
+
+/* ============================================================
+   站点设置：统一大表单（区块 / Dropzone 上传 / 颜色组 / Sticky 保存）
+   ============================================================ */
+.settings-form { max-width: 880px; }
+.settings-block {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px 32px;
+  margin-bottom: 32px;
+}
+.block-head { border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 22px; }
+.block-head h3 { margin: 0 0 6px; font-size: 1.15rem; color: var(--text-strong); }
+.block-head p { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
+
+/* 统一样式输入框 */
+.form-control {
+  width: 100%; height: 40px; padding: 0 12px; box-sizing: border-box;
+  border: 1px solid var(--border-strong); border-radius: 6px;
+  background: var(--bg); color: var(--text); font: inherit;
+}
+textarea.form-control { height: auto; padding: 10px 12px; line-height: 1.5; resize: vertical; }
+.form-control:focus { outline: none; border-color: var(--brand-color); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* Dropzone 风格：细长上传条 */
+.modern-upload {
+  display: flex; align-items: center; gap: 16px;
+  border: 1px dashed var(--border-strong); border-radius: 10px;
+  padding: 12px 16px; background: var(--surface-alt);
+}
+.modern-upload .preview {
+  width: 56px; height: 56px; flex: none; border-radius: 8px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--card-bg); border: 1px solid var(--border);
+}
+.modern-upload .preview img { max-width: 100%; max-height: 100%; display: block; }
+.modern-upload .preview i { font-size: 1.35rem; color: var(--text-faint); }
+.modern-upload .preview--round, .modern-upload .preview--round img { border-radius: 50%; }
+.modern-upload .actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.modern-upload .hint { color: var(--text-faint); font-size: 0.82rem; }
+.modern-upload .file-name { color: var(--text-muted); font-size: 0.85rem; }
+.remove-toggle {
+  display: inline-flex; align-items: center; gap: 5px;
+  color: var(--text-muted); font-size: 0.85rem; cursor: pointer;
+}
+
+/* 颜色输入组（色块 + 文本框一体） */
+.input-group { display: flex; align-items: center; gap: 10px; }
+.color-preview-box {
+  width: 44px; height: 40px; flex: none; border-radius: 6px; overflow: hidden;
+  border: 1px solid var(--border); position: relative; cursor: pointer;
+  background: var(--brand-color);
+}
+.color-preview-box input[type="color"] {
+  opacity: 0; width: 100%; height: 100%; border: none; padding: 0; cursor: pointer;
+}
+.input-group .color-text-input { flex: 1; }
+
+/* Sticky 保存条（全页唯一保存按钮） */
+.settings-savebar {
+  position: sticky; bottom: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: flex-end; gap: 16px;
+  padding: 14px 20px; margin: 0 0 24px;
+  background: var(--card-bg); border-top: 1px solid var(--border);
+  border-radius: 12px; box-shadow: var(--shadow);
+}
+.settings-savebar .savebar-hint { color: var(--text-muted); font-size: 0.88rem; }

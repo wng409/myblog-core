@@ -1015,8 +1015,21 @@ const SITE_FIELD_SETTERS = {
   about_avatar:    (v) => { const x = String(v == null ? '' : v).trim().slice(0, 300); return /^\/[\w\-./]*$/.test(x) ? x : ''; }
 };
 
-app.post('/admin/settings/site', authOnly, csrfProtection, (req, res) => {
+// 统一大表单可携带 Logo / 头像文件（multipart）
+const siteFormUpload = upload.fields([
+  { name: 'site_logo_file', maxCount: 1 },
+  { name: 'about_avatar_file', maxCount: 1 }
+]);
+
+app.post('/admin/settings/site', authOnly, siteFormUpload, csrfProtection, (req, res) => {
   const sets = [], vals = [];
+  // 大表单中的图片文件（若已选择则覆盖对应字段）
+  const logoFile = req.files && req.files.site_logo_file && req.files.site_logo_file[0];
+  const avatarFile = req.files && req.files.about_avatar_file && req.files.about_avatar_file[0];
+  if (logoFile) { sets.push('site_logo = ?'); vals.push(fileUrl(logoFile)); }
+  else if (req.body.remove_logo) { sets.push('site_logo = ?'); vals.push(''); }
+  if (avatarFile) { sets.push('about_avatar = ?'); vals.push(fileUrl(avatarFile)); }
+  else if (req.body.remove_avatar) { sets.push('about_avatar = ?'); vals.push(''); }
   Object.keys(SITE_FIELD_SETTERS).forEach((k) => {
     if (Object.prototype.hasOwnProperty.call(req.body, k)) {
       sets.push(`${k} = ?`);

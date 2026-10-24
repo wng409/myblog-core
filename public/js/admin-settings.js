@@ -148,17 +148,46 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 });
-// 站点设置：主题色选择器 <-> 文本 <-> 预览色块 联动
+
+// 站点设置：颜色组联动（色块 <-> 文本框 双向） + 上传即时预览
 (function () {
   var input = document.getElementById('themeColorInput');
-  var text = document.getElementById('themeColorText');
-  var preview = document.getElementById('themeColorPreview');
-  if (!input) return;
-  if (preview && preview.dataset && preview.dataset.color) {
-    preview.style.background = preview.dataset.color;
+  var text  = document.getElementById('themeColorText');
+  var box   = document.getElementById('themeColorBox');
+  var hexOk = function (v) { return /^#[0-9a-fA-F]{3}$/.test(v) || /^#[0-9a-fA-F]{6}$/.test(v); };
+
+  if (input && box) {
+    box.style.background = input.value;
+    input.addEventListener('input', function () {
+      if (text) text.value = input.value;
+      box.style.background = input.value;
+    });
+    if (text) {
+      text.addEventListener('input', function () {
+        var v = text.value.trim();
+        if (hexOk(v)) { input.value = v; box.style.background = v; }
+      });
+    }
   }
-  input.addEventListener('input', function () {
-    if (text) text.value = input.value;
-    if (preview) preview.style.background = input.value;
-  });
+
+  // 文件选择后即时预览（Dropzone 内的 .preview）
+  function bindPreview(fileId, previewSelector) {
+    var file = document.getElementById(fileId);
+    var box = document.querySelector(previewSelector);
+    if (!file || !box) return;
+    file.addEventListener('change', function () {
+      var f = file.files && file.files[0];
+      if (!f) return;
+      var url = URL.createObjectURL(f);
+      var img = box.querySelector('img');
+      if (!img) {
+        img = document.createElement('img');
+        box.textContent = '';
+        box.appendChild(img);
+      }
+      img.src = url;
+    });
+  }
+  bindPreview('siteLogoFile', '.settings-form .settings-block:nth-of-type(2) .modern-upload .preview');
+  bindPreview('aboutAvatarFile', '.settings-form .settings-block:nth-of-type(3) .modern-upload .preview');
 })();
