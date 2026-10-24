@@ -9,6 +9,9 @@ const MarkdownIt = require('markdown-it');
 const md = new MarkdownIt({ html: false, linkify: true });
 const expressLayouts = require('express-ejs-layouts');
 const users = require('./lib/users');
+// 用于时间侧信道防御的假哈希：启动时计算一次即可，
+// 绝不能放进路由内每次生成（一次 scrypt 约 50ms，会造成 CPU DoS）
+const DUMMY_PASSWORD_HASH = users.hashPassword('dummy_password_for_timing_protection');
 const i18n = require('./lib/i18n');
 let currentLang = i18n.DEFAULT_LANG;
 
@@ -701,7 +704,12 @@ app.post('/admin/login', loginLimiter, (req, res) => {
 
   users.findUserByUsername(db, username, (err, user) => {
     if (err) { console.error('查询用户失败:', err); return res.status(500).send(i18n.t(currentLang, 'error.500.title')); }
-    if (!user) return fail(i18n.t(currentLang, 'auth.invalid'));
+    if (!user) {
+      // 防御时间侧信道：即使账号不存在，也执行一次等价的 scrypt 校验，
+      // 拉平与"密码错误"分支的耗时，避免通过响应时间枚举有效用户名
+      users.verifyPassword(password, DUMMY_PASSWORD_HASH);
+      return fail(i18n.t(currentLang, 'auth.invalid'));
+    }
     if (!user.is_active) return fail(i18n.t(currentLang, 'auth.disabled'));
     if (!users.verifyPassword(password, user.password_hash)) return fail(i18n.t(currentLang, 'auth.invalid'));
 
