@@ -8,7 +8,8 @@
 :root {
   --brand-color: #e60012;   /* 品牌主题色：可由后台「主题色」在 <head> 内联覆盖 */
   --hw-red: var(--brand-color);
-  --hw-red-dark: #c4000f;
+  --hw-red-dark: #c4000f;                                  /* fallback（不支持 color-mix 时） */
+  --hw-red-dark: color-mix(in srgb, var(--brand-color) 82%, #000);  /* 随主题色加深 */
   --hw-white: #ffffff;
   --hw-light-gray: #f5f5f5;
   --hw-dark-gray: #333333;

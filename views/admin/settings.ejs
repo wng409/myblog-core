@@ -7,6 +7,7 @@
   <title><%= t('admin.settings.title') %></title>
   <link rel="stylesheet" href="/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
+  <%- include('../partials/brand-color') %>
   <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body data-csrf="<%= csrfToken %>" data-upload-failed="<%= t('admin.banner.uploadFailed') %>" data-upload-invalid="<%= t('admin.banner.uploadInvalid') %>" data-lang="<%= lang %>">
@@ -108,7 +109,7 @@
             <label for="siteSubtitleInput"><%= t('admin.settings.siteSubtitle') %></label>
             <input type="text" id="siteSubtitleInput" name="site_subtitle" value="<%= settings.site_subtitle || '' %>">
           </div>
-          <button type="submit" class="btn"><%= t('admin.settings.saveSite') %></button>
+          <button type="submit" class="btn btn-primary"><%= t('admin.settings.saveSite') %></button>
         </form>
       </div>
 
@@ -123,10 +124,15 @@
           <% } %>
         </div>
         <p class="hint"><%= t('admin.settings.logoHint') %></p>
-        <form method="POST" action="/admin/settings/upload-logo" enctype="multipart/form-data">
+        <form method="POST" action="/admin/settings/upload-logo" enctype="multipart/form-data" class="upload-row">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <input type="file" name="logo" accept="image/*" class="file-input">
-          <button type="submit" class="btn btn-sm"><%= t('admin.settings.uploadLogo') %></button>
+          <div class="file-upload-wrapper">
+            <label class="file-upload-btn" for="logoFileInput"><%= t('admin.settings.chooseImage') %></label>
+            <input type="file" id="logoFileInput" name="logo" accept="image/*"
+                   onchange="document.getElementById('logoFileName').textContent = (this.files[0] && this.files[0].name) || ''">
+            <span class="file-name" id="logoFileName"></span>
+          </div>
+          <button type="submit" class="btn btn-primary"><%= t('admin.settings.uploadLogo') %></button>
         </form>
         <% if (settings.site_logo) { %>
         <form method="POST" action="/admin/settings/site" class="inline-form">
@@ -151,7 +157,7 @@
             </div>
             <p class="hint"><%= t('admin.settings.themeColorHint') %></p>
           </div>
-          <button type="submit" class="btn"><%= t('admin.settings.saveSite') %></button>
+          <button type="submit" class="btn btn-primary"><%= t('admin.settings.saveSite') %></button>
         </form>
       </div>
 
@@ -165,10 +171,15 @@
             <i class="fas fa-user placeholder-icon"></i>
           <% } %>
         </div>
-        <form method="POST" action="/admin/settings/upload-avatar" enctype="multipart/form-data">
+        <form method="POST" action="/admin/settings/upload-avatar" enctype="multipart/form-data" class="upload-row">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <input type="file" name="avatar" accept="image/*" class="file-input">
-          <button type="submit" class="btn btn-sm"><%= t('admin.settings.uploadAvatar') %></button>
+          <div class="file-upload-wrapper">
+            <label class="file-upload-btn" for="avatarFileInput"><%= t('admin.settings.chooseImage') %></label>
+            <input type="file" id="avatarFileInput" name="avatar" accept="image/*"
+                   onchange="document.getElementById('avatarFileName').textContent = (this.files[0] && this.files[0].name) || ''">
+            <span class="file-name" id="avatarFileName"></span>
+          </div>
+          <button type="submit" class="btn btn-primary"><%= t('admin.settings.uploadAvatar') %></button>
         </form>
         <% if (settings.about_avatar) { %>
         <form method="POST" action="/admin/settings/site" class="inline-form">
@@ -191,7 +202,7 @@
             <label for="aboutEmailInput"><%= t('admin.settings.email') %></label>
             <input type="text" id="aboutEmailInput" name="about_email" value="<%= settings.about_email || '' %>" placeholder="mailto:you@example.com">
           </div>
-          <button type="submit" class="btn"><%= t('admin.settings.saveSite') %></button>
+          <button type="submit" class="btn btn-primary"><%= t('admin.settings.saveSite') %></button>
         </form>
       </div>
 
@@ -208,7 +219,7 @@
             <label for="footerTextInput"><%= t('admin.settings.copyrightLabel') %></label>
             <input type="text" id="footerTextInput" name="footer_text" value="<%= settings.footer_text || '' %>">
           </div>
-          <button type="submit" class="btn"><%= t('admin.settings.saveSite') %></button>
+          <button type="submit" class="btn btn-primary"><%= t('admin.settings.saveSite') %></button>
         </form>
       </div>
     </div>

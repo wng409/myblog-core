@@ -3,7 +3,7 @@
 <head>
   <%- include('../partials/theme-init') %>
   <% const SITE_TITLE = (locals.settings && locals.settings.site_title) || siteName; %>
-  <style>:root { --brand-color: <%= (locals.settings && locals.settings.theme_color) || '#e60012' %>; }</style>
+  <%- include('../partials/brand-color') %>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= locals.titleKey ? t(locals.titleKey) + ' · ' + SITE_TITLE : (locals.title ? locals.title + ' · ' + SITE_TITLE : SITE_TITLE) %></title>

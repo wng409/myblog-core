@@ -1355,3 +1355,61 @@ input[type="color"] {
   background: var(--brand-color);
 }
 .file-input { margin-bottom: 10px; }
+
+/* ============================================================
+   站点设置 v3：现代控件（上传 / 颜色 / 按钮 / 间距）
+   ============================================================ */
+
+/* 主色按钮（保存 / 上传专用；删除仍用 .btn-danger） */
+.btn-primary {
+  background: var(--brand-color);
+  color: var(--hw-white);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: filter .2s, box-shadow .2s;
+}
+.btn-primary:hover { filter: brightness(.92); box-shadow: var(--shadow); }
+
+/* 卡片：更舒展的间距 */
+.setting-card { padding: 24px; }
+.setting-card .form-group { margin-bottom: 20px; }
+.setting-card .btn + .btn { margin-left: 8px; }
+
+/* 自定义文件上传控件（隐藏原生 input[type=file]） */
+.file-upload-wrapper { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.file-upload-wrapper input[type="file"] { display: none; }
+.file-upload-btn {
+  display: inline-block;
+  padding: 9px 18px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.92rem;
+  transition: background .2s, border-color .2s;
+}
+.file-upload-wrapper:hover .file-upload-btn { background: var(--surface-gray); border-color: var(--brand-color); }
+.file-name { color: var(--text-faint); font-size: 0.88rem; }
+
+/* 颜色选择器：整齐的 flex 行（48px 色块 + 等高铁框） */
+.color-row { display: flex; align-items: center; gap: 12px; }
+.color-row input[type="color"] {
+  width: 48px; height: 48px; padding: 0; border: none; border-radius: 10px;
+  background: none; cursor: pointer; flex: none;
+}
+.color-row .color-text {
+  flex: 1; height: 48px; width: auto; box-sizing: border-box;
+  padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 10px;
+  background: var(--bg); color: var(--text);
+  font-family: monospace; font-size: 0.95rem;
+}
+.color-row .color-text:focus { outline: none; border-color: var(--brand-color); box-shadow: 0 0 0 3px var(--accent-soft); }
+.color-row .color-preview { width: 48px; height: 48px; border-radius: 10px; border: 1px solid var(--border); flex: none; }
+
+/* 卡片内的说明与文件行 */
+.setting-card .file-upload-wrapper { margin-bottom: 0; }
+.setting-card .upload-row { margin-bottom: 12px; }
