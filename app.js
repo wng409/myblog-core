@@ -497,7 +497,7 @@ const upload = multer({
   storage,
   limits: {
     fileSize: 5 * 1024 * 1024,
-    files: 1, fields: 20, fieldSize: 1 * 1024 * 1024,
+    files: 2, fields: 20, fieldSize: 1 * 1024 * 1024,   // 站点设置大表单需同时上传 Logo + 头像
     fieldNameSize: 100, parts: 25
   },
   fileFilter: (req, file, cb) => {
