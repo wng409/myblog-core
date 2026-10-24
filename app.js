@@ -587,20 +587,36 @@ app.get('/posts', (req, res) => {
   const tag = req.query.tag || '';
   const search = req.query.search || '';
   const sort = req.query.sort || 'desc';
-  let sql = 'SELECT * FROM posts WHERE deleted_at IS NULL';
-  const params = [];
-  if (tag) { sql += ' AND tags LIKE ?'; params.push(`%${tag}%`); }
-  if (search) { sql += ' AND (title LIKE ? OR content LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
-  sql += ` ORDER BY created_at ${sort === 'asc' ? 'ASC' : 'DESC'}`;
 
-  db.all(sql, params, (err, posts) => {
+  // 分页：每页 6 篇（与前台卡片网格 3 列 x 2 行一致）
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = 6;
+  const offset = (page - 1) * limit;
+
+  let whereSql = ' WHERE deleted_at IS NULL';
+  const params = [];
+  if (tag) { whereSql += ' AND tags LIKE ?'; params.push(`%${tag}%`); }
+  if (search) { whereSql += ' AND (title LIKE ? OR content LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
+
+  // 1) 先查总数，算总页数
+  db.get(`SELECT COUNT(*) AS total FROM posts${whereSql}`, params, (err, row) => {
     if (err) return res.status(500).send(users.errorPage({ status: 500, title: i18n.t(currentLang, 'error.500.title'), message: i18n.t(currentLang, 'error.500.message'), lang: currentLang }));
-    getAllTags((err, tags) => {
-      if (err) tags = [];
-      res.render('posts/list', {
-        titleKey: 'nav.posts', posts: posts || [], tags: tags || [],
-        currentTag: tag, search, sort,
-        darkMode: (req.session && req.session.darkMode) || false
+    const totalPages = Math.max(1, Math.ceil((row ? row.total : 0) / limit));
+
+    // 2) 查当前页数据（LENGTH(content) 供阅读时长，避免白读正文）
+    const sql = `SELECT id, title, slug, tags, cover_image, created_at, updated_at, LENGTH(content) AS content_len
+                 FROM posts${whereSql}
+                 ORDER BY created_at ${sort === 'asc' ? 'ASC' : 'DESC'} LIMIT ? OFFSET ?`;
+    db.all(sql, [...params, limit, offset], (err, posts) => {
+      if (err) return res.status(500).send(users.errorPage({ status: 500, title: i18n.t(currentLang, 'error.500.title'), message: i18n.t(currentLang, 'error.500.message'), lang: currentLang }));
+      getAllTags((err, tags) => {
+        if (err) tags = [];
+        res.render('posts/list', {
+          titleKey: 'nav.posts', posts: posts || [], tags: tags || [],
+          currentTag: tag, search, sort,
+          darkMode: (req.session && req.session.darkMode) || false,
+          currentPage: page, totalPages
+        });
       });
     });
   });

@@ -1,82 +1,129 @@
 <!-- 页面标题 -->
-<section class="page-title">
+<section class="posts-hero">
   <div class="container">
     <h1><%= t('posts.title') %></h1>
+    <div class="hero-line"></div>
     <p><%= t('posts.subtitle') %></p>
   </div>
 </section>
 
-<!-- 筛选和排序 -->
-<div class="container">
-  <div class="filter-controls">
-    <!-- 标签筛选 -->
-    <div class="filter-group">
-      <div class="filter-label"><%= t('posts.filterTags') %></div>
-      <div class="tag-filters">
-        <a href="/posts<%= search ? '?search='+encodeURIComponent(search) : '' %>" class="tag-filter <%= !currentTag ? 'active' : '' %>"><%= t('posts.filterAll') %></a>
-        <% tags.forEach(tag => { %>
-          <a href="/posts?tag=<%= encodeURIComponent(tag) %><%= search ? '&search='+encodeURIComponent(search) : '' %>" class="tag-filter <%= currentTag === tag ? 'active' : '' %>">
-            <%= tag %>
+<div class="container posts-layout">
+  <!-- 左侧主区域 -->
+  <main class="posts-main">
+    <div class="posts-toolbar">
+      <div class="posts-search">
+        <input type="text" id="searchInput" placeholder="<%= t('posts.searchPlaceholder') %>" value="<%= search %>">
+        <button id="searchBtn" type="button" aria-label="<%= t('posts.searchBtn') %>">
+          <i class="fas fa-search"></i>
+        </button>
+      </div>
+      <button type="button" class="filter-toggle" id="filterToggle" aria-label="<%= t('posts.filterTags') %>">
+        <i class="fas fa-filter"></i>
+      </button>
+    </div>
+
+    <% if (posts && posts.length > 0) { %>
+      <div class="posts-grid">
+        <% posts.forEach(post => { %>
+          <a href="/posts/<%= post.slug %>" class="post-card">
+            <div class="post-card-cover">
+              <% if (post.cover_image) { %>
+                <img src="<%= post.cover_image %>" alt="" loading="lazy">
+              <% } else { %>
+                <div class="post-card-placeholder">
+                  <i class="fas fa-file-alt"></i>
+                </div>
+              <% } %>
+            </div>
+            <div class="post-card-body">
+              <h2 class="post-card-title"><%= post.title %></h2>
+              <div class="post-card-meta">
+                <div class="post-card-meta-left">
+                  <time class="post-card-date">
+                    <%= new Date(post.created_at).toISOString().slice(0, 10) %>
+                  </time>
+                  <span class="post-card-reading"><i class="far fa-clock"></i> <%= t('posts.readingTime') %><%= Math.ceil((post.content_len || 0) / 300) %><%= t('posts.minutes') %></span>
+                </div>
+                <div class="post-card-tags">
+                  <% if (post.tags) { %>
+                    <% post.tags.split(',').slice(0, 3).forEach(tg => { %>
+                      <span class="post-card-tag"><%= tg.trim() %></span>
+                    <% }) %>
+                  <% } %>
+                </div>
+              </div>
+            </div>
           </a>
         <% }) %>
       </div>
-    </div>
-
-    <!-- 搜索框 -->
-    <div class="filter-group">
-      <div class="filter-label"><%= t('posts.search') %></div>
-      <input type="text" id="searchInput" placeholder="<%= t('posts.searchPlaceholder') %>" value="<%= search %>" style="padding:6px 12px; border:1px solid var(--hw-border); border-radius:4px; width:180px;">
-      <button id="searchBtn" type="button" class="tag-filter" style="background:var(--hw-red); color:white; border:var(--hw-red);"><%= t('posts.searchBtn') %></button>
-    </div>
-
-    <!-- 排序 -->
-    <div class="filter-group">
-      <div class="filter-label"><%= t('posts.sort') %></div>
-      <div class="sort-options">
-        <a href="/posts?sort=desc<%= currentTag ? '&tag='+encodeURIComponent(currentTag) : '' %><%= search ? '&search='+encodeURIComponent(search) : '' %>" class="sort-btn <%= sort === 'desc' ? 'active' : '' %>"><%= t('posts.sortNewest') %></a>
-        <a href="/posts?sort=asc<%= currentTag ? '&tag='+encodeURIComponent(currentTag) : '' %><%= search ? '&search='+encodeURIComponent(search) : '' %>" class="sort-btn <%= sort === 'asc' ? 'active' : '' %>"><%= t('posts.sortOldest') %></a>
+    <% } else { %>
+      <div class="no-results">
+        <i class="fas fa-search"></i>
+        <h3><%= t('posts.emptyTitle') %></h3>
+        <p><%= t('posts.emptyHint') %></p>
       </div>
-    </div>
-  </div>
-</div>
+    <% } %>
 
-<!-- 文章列表 -->
-<section class="articles-content">
-  <div class="container">
-    <div class="articles-list">
-      <% if (posts && posts.length > 0) { %>
-        <% posts.forEach(post => { %>
-          <article class="article-item">
-            <div class="article-header">
-              <h2><%= post.title %></h2>
-              <div class="article-meta">
-                <span><i class="far fa-calendar"></i> <%= new Date(post.created_at).toISOString().slice(0,10) %></span>
-                <span><i class="far fa-clock"></i> <%= t('posts.readingTime') %><%= Math.ceil((post.content || '').length / 300) %><%= t('posts.minutes') %></span>
-              </div>
-              <div class="article-tags">
-                <% if (post.tags) { %>
-                  <% post.tags.split(',').forEach(tag => { %>
-                    <span class="article-tag"><%= tag.trim() %></span>
-                  <% }) %>
-                <% } %>
-              </div>
-            </div>
-            <div class="article-body">
-              <div class="article-image" style="background-image: url('<%= post.cover_image || 'https://via.placeholder.com/800x400' %>');"></div>
-              <p><%= post.content ? post.content.replace(/<[^>]+>/g,'').slice(0,200) + '...' : '' %></p>
-            </div>
-            <div class="article-footer">
-              <a href="/posts/<%= post.slug %>" class="project-link"><%= t('posts.readMore') %> <i class="fas fa-arrow-right"></i></a>
-            </div>
-          </article>
+    <!-- 分页器（服务端渲染；静态站由前端接管，故隐藏） -->
+    <% if (!locals.isStatic && totalPages > 1) { %>
+      <div class="pagination-wrap" style="margin-top: 30px;">
+        <ul class="pagination">
+          <% if (currentPage > 1) { %>
+            <li><a href="?page=<%= currentPage - 1 %><%= currentTag ? '&tag='+encodeURIComponent(currentTag) : '' %><%= search ? '&search='+encodeURIComponent(search) : '' %><%= sort !== 'desc' ? '&sort='+sort : '' %>" class="page-btn"><i class="fas fa-chevron-left"></i> <%= t('posts.prevPage') %></a></li>
+          <% } else { %>
+            <li><span class="page-btn disabled"><i class="fas fa-chevron-left"></i> <%= t('posts.prevPage') %></span></li>
+          <% } %>
+
+          <li><span class="page-num active"><%= currentPage %> / <%= totalPages %></span></li>
+
+          <% if (currentPage < totalPages) { %>
+            <li><a href="?page=<%= currentPage + 1 %><%= currentTag ? '&tag='+encodeURIComponent(currentTag) : '' %><%= search ? '&search='+encodeURIComponent(search) : '' %><%= sort !== 'desc' ? '&sort='+sort : '' %>" class="page-btn"><%= t('posts.nextPage') %> <i class="fas fa-chevron-right"></i></a></li>
+          <% } else { %>
+            <li><span class="page-btn disabled"><%= t('posts.nextPage') %> <i class="fas fa-chevron-right"></i></span></li>
+          <% } %>
+        </ul>
+      </div>
+    <% } %>
+
+  </main>
+
+  <!-- 右侧侧边栏：标签云 + 排序 -->
+  <aside class="posts-sidebar" id="filterPanel">
+    <div class="sidebar-header">
+      <h3><%= t('posts.filterTags') %></h3>
+      <button type="button" class="sidebar-close" id="filterClose" aria-label="<%= t('nav.close') %>">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="filter-section">
+      <h3 class="filter-title"><%= t('posts.filterTags') %></h3>
+      <div class="filter-chips" id="tagChips">
+        <a href="/posts<%= search ? '?search='+encodeURIComponent(search) : '' %>"
+           class="filter-chip <%= !currentTag ? 'active' : '' %>"><%= t('posts.filterAll') %></a>
+        <% tags.forEach((tg, i) => { %>
+          <a href="/posts?tag=<%= encodeURIComponent(tg) %><%= search ? '&search='+encodeURIComponent(search) : '' %>"
+             class="filter-chip <%= currentTag === tg ? 'active' : '' %> <%= i >= 12 ? 'chip-hidden' : '' %>"
+             data-index="<%= i %>"><%= tg %></a>
         <% }) %>
-      <% } else { %>
-        <div class="no-results">
-          <i class="fas fa-search"></i>
-          <h3><%= t('posts.emptyTitle') %></h3>
-          <p><%= t('posts.emptyHint') %></p>
-        </div>
+      </div>
+      <% if (tags.length > 12) { %>
+        <button type="button" class="filter-expand" id="tagExpand">
+          <i class="fas fa-chevron-down"></i>
+        </button>
       <% } %>
     </div>
-  </div>
-</section>
+
+    <div class="filter-section">
+      <h3 class="filter-title"><%= t('posts.sort') %></h3>
+      <div class="filter-chips">
+        <a href="/posts?sort=desc<%= currentTag ? '&tag='+encodeURIComponent(currentTag) : '' %><%= search ? '&search='+encodeURIComponent(search) : '' %>"
+           class="filter-chip <%= sort === 'desc' ? 'active' : '' %>"><%= t('posts.sortNewest') %></a>
+        <a href="/posts?sort=asc<%= currentTag ? '&tag='+encodeURIComponent(currentTag) : '' %><%= search ? '&search='+encodeURIComponent(search) : '' %>"
+           class="filter-chip <%= sort === 'asc' ? 'active' : '' %>"><%= t('posts.sortOldest') %></a>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div class="sidebar-mask" id="filterMask"></div>

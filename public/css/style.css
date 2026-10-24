@@ -1659,3 +1659,14 @@ main pre code {
     width: 100%;
   }
 }
+/* ============ core 独有：Banner 空态 与 卡片阅读时长 ============ */
+.banner-carousel .slide-image--empty {
+  background: linear-gradient(135deg, var(--surface-muted), var(--hw-light-gray));
+  background-size: cover;
+  background-position: center;
+}
+.post-card-reading {
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  margin-left: 10px;
+}
