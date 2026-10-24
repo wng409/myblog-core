@@ -228,8 +228,13 @@ document.addEventListener('DOMContentLoaded', function () {
     var customOpt = sel.querySelector('option[value="link"]');
     if (customOpt) customOpt.textContent = customText || 'link';
     if (urlPh) url.placeholder = urlPh;
-    if (removeText) del.textContent = removeText;
     if (data) { sel.value = data.type || 'link'; url.value = data.url || ''; }
+    // 平台图标随 select 变化
+    var iconEl = node.querySelector('.social-icon');
+    var ICONS = { github:'fab fa-github', email:'fas fa-envelope', bilibili:'fab fa-bilibili', zhihu:'fab fa-zhihu', x:'fab fa-x-twitter', telegram:'fab fa-telegram', wechat:'fab fa-weixin', link:'fas fa-link' };
+    function updIcon() { if (iconEl) iconEl.className = 'social-icon ' + (ICONS[sel.value] || 'fas fa-link'); }
+    updIcon();
+    sel.addEventListener('change', updIcon);
     del.addEventListener('click', function () {
       var idx = Array.prototype.indexOf.call(editor.querySelectorAll('.social-row'), row);
       if (idx >= 0) { links.splice(idx, 1); row.remove(); sync(); }

@@ -22,111 +22,111 @@
     <form method="POST" action="/admin/settings/site" enctype="multipart/form-data" class="settings-form" id="siteSettingsForm">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
-      <!-- 区块 1：基本设置 -->
-      <section class="settings-block">
-        <div class="block-head">
+      <!-- 区块 1：基础信息 -->
+      <div class="setting-section">
+        <div class="setting-info">
           <h3><%= t('admin.settings.tabBasic') %></h3>
           <p><%= t('admin.settings.basicDesc') %></p>
         </div>
-        <div class="block-body">
-          <div class="form-group">
+        <div class="setting-controls">
+          <div class="control-item">
             <label for="siteTitleInput"><%= t('admin.settings.siteTitle') %></label>
             <input type="text" id="siteTitleInput" name="site_title" class="form-control" value="<%= settings.site_title || '' %>">
           </div>
-          <div class="form-group">
+          <div class="control-item">
             <label for="siteSubtitleInput"><%= t('admin.settings.siteSubtitle') %></label>
             <input type="text" id="siteSubtitleInput" name="site_subtitle" class="form-control" value="<%= settings.site_subtitle || '' %>">
           </div>
         </div>
-      </section>
+      </div>
 
       <!-- 区块 2：品牌外观 -->
-      <section class="settings-block">
-        <div class="block-head">
+      <div class="setting-section">
+        <div class="setting-info">
           <h3><%= t('admin.settings.tabAppearance') %></h3>
           <p><%= t('admin.settings.appearanceDesc') %></p>
         </div>
-        <div class="block-body">
-          <div class="form-group">
+        <div class="setting-controls">
+          <div class="control-item">
             <label><%= t('admin.settings.logo') %></label>
-            <div class="modern-upload">
-              <div class="preview">
+            <div class="custom-upload">
+              <div class="preview-box">
                 <% if (settings.site_logo) { %>
                   <img src="<%= settings.site_logo %>" alt="logo">
                 <% } else { %>
                   <i class="fas fa-feather-alt"></i>
                 <% } %>
               </div>
-              <div class="actions">
-                <button type="button" class="btn btn-secondary" onclick="document.getElementById('siteLogoFile').click()"><%= t('admin.settings.chooseImage') %></button>
+              <div class="upload-actions">
+                <button type="button" class="btn-outline" onclick="document.getElementById('siteLogoFile').click()"><%= t('admin.settings.chooseImage') %></button>
                 <span class="hint"><%= t('admin.settings.logoHint') %></span>
                 <span class="file-name" id="siteLogoName"></span>
                 <% if (settings.site_logo) { %>
                   <label class="remove-toggle"><input type="checkbox" name="remove_logo" value="1"> <%= t('admin.settings.remove') %></label>
                 <% } %>
               </div>
-              <input type="file" id="siteLogoFile" name="site_logo_file" accept="image/*" hidden
+              <input type="file" id="siteLogoFile" name="site_logo_file" accept="image/*" style="display:none;"
                      onchange="document.getElementById('siteLogoName').textContent = (this.files[0] && this.files[0].name) || '';">
             </div>
           </div>
-          <div class="form-group">
+          <div class="control-item">
             <label for="themeColorText"><%= t('admin.settings.themeColor') %></label>
             <div class="input-group">
-              <span class="color-preview-box" id="themeColorBox">
+              <div class="color-box" id="themeColorBox">
                 <input type="color" id="themeColorInput" name="theme_color" value="<%= settings.theme_color || '#e60012' %>">
-              </span>
-              <input type="text" id="themeColorText" name="theme_color_text" class="form-control color-text-input" value="<%= settings.theme_color || '#e60012' %>" spellcheck="false">
+              </div>
+              <input type="text" id="themeColorText" name="theme_color_text" class="form-control" value="<%= settings.theme_color || '#e60012' %>" spellcheck="false">
             </div>
             <p class="hint"><%= t('admin.settings.themeColorHint') %></p>
           </div>
         </div>
-      </section>
+      </div>
 
       <!-- 区块 3：关于我 -->
-      <section class="settings-block">
-        <div class="block-head">
+      <div class="setting-section">
+        <div class="setting-info">
           <h3><%= t('admin.settings.tabAbout') %></h3>
           <p><%= t('admin.settings.aboutDesc') %></p>
         </div>
-        <div class="block-body">
-          <div class="form-group">
+        <div class="setting-controls">
+          <div class="control-item">
             <label><%= t('admin.settings.avatar') %></label>
-            <div class="modern-upload">
-              <div class="preview preview--round">
+            <div class="custom-upload">
+              <div class="preview-box preview-box--round">
                 <% if (settings.about_avatar) { %>
                   <img src="<%= settings.about_avatar %>" alt="avatar">
                 <% } else { %>
                   <i class="fas fa-user"></i>
                 <% } %>
               </div>
-              <div class="actions">
-                <button type="button" class="btn btn-secondary" onclick="document.getElementById('aboutAvatarFile').click()"><%= t('admin.settings.chooseImage') %></button>
+              <div class="upload-actions">
+                <button type="button" class="btn-outline" onclick="document.getElementById('aboutAvatarFile').click()"><%= t('admin.settings.chooseImage') %></button>
                 <span class="file-name" id="aboutAvatarName"></span>
                 <% if (settings.about_avatar) { %>
                   <label class="remove-toggle"><input type="checkbox" name="remove_avatar" value="1"> <%= t('admin.settings.remove') %></label>
                 <% } %>
               </div>
-              <input type="file" id="aboutAvatarFile" name="about_avatar_file" accept="image/*" hidden
+              <input type="file" id="aboutAvatarFile" name="about_avatar_file" accept="image/*" style="display:none;"
                      onchange="document.getElementById('aboutAvatarName').textContent = (this.files[0] && this.files[0].name) || '';">
             </div>
           </div>
-          <div class="form-group">
+          <div class="control-item">
             <label for="aboutBioInput"><%= t('admin.settings.aboutBio') %></label>
             <textarea id="aboutBioInput" name="about_bio" class="form-control" rows="4"><%= settings.about_bio || '' %></textarea>
           </div>
-          <div class="form-group">
+          <div class="control-item">
             <label><%= t('admin.settings.social') %></label>
             <p class="hint"><%= t('admin.settings.socialDesc') %></p>
             <div class="social-editor" id="socialEditor"
                  data-links="<%= JSON.stringify(settings.social_links || []) %>"
                  data-empty="<%= t('admin.settings.socialEmpty') %>"
                  data-url-ph="<%= t('admin.settings.socialUrl') %>"
-                 data-remove="<%= t('admin.settings.remove') %>"
                  data-custom="<%= t('admin.settings.socialCustom') %>"></div>
             <input type="hidden" name="social_links" id="socialLinksInput" value="">
             <template id="socialRowTpl">
               <div class="social-row">
-                <select class="social-type">
+                <i class="social-icon fab fa-github"></i>
+                <select class="form-control social-type">
                   <option value="github">GitHub</option>
                   <option value="email">Email</option>
                   <option value="bilibili">Bilibili</option>
@@ -137,35 +137,34 @@
                   <option value="link"></option>
                 </select>
                 <input type="text" class="form-control social-url">
-                <button type="button" class="btn-sm btn-danger social-del"></button>
+                <button type="button" class="btn-icon-danger social-del" title="<%= t('admin.settings.remove') %>"><i class="fas fa-trash"></i></button>
               </div>
             </template>
-            <button type="button" class="btn btn-secondary" id="socialAddBtn">+ <%= t('admin.settings.addSocial') %></button>
+            <button type="button" class="btn-outline" id="socialAddBtn">+ <%= t('admin.settings.addSocial') %></button>
           </div>
         </div>
-      </section>
+      </div>
 
       <!-- 区块 4：页脚设置 -->
-      <section class="settings-block">
-        <div class="block-head">
+      <div class="setting-section">
+        <div class="setting-info">
           <h3><%= t('admin.settings.tabFooter') %></h3>
           <p><%= t('admin.settings.footerDesc') %></p>
         </div>
-        <div class="block-body">
-          <div class="form-group">
+        <div class="setting-controls">
+          <div class="control-item">
             <label for="footerSubtitleInput"><%= t('admin.settings.footerSubtitleLabel') %></label>
             <input type="text" id="footerSubtitleInput" name="footer_subtitle" class="form-control" value="<%= settings.footer_subtitle || '' %>">
           </div>
-          <div class="form-group">
+          <div class="control-item">
             <label for="footerTextInput"><%= t('admin.settings.copyrightLabel') %></label>
             <input type="text" id="footerTextInput" name="footer_text" class="form-control" value="<%= settings.footer_text || '' %>">
           </div>
         </div>
-      </section>
+      </div>
 
-      <!-- Sticky 保存条：全页唯一保存按钮 -->
+      <!-- 吸底保存条（透明毛玻璃 + 唯一保存按钮） -->
       <div class="settings-savebar">
-        <span class="savebar-hint"><%= t('admin.settings.saveAll') %></span>
         <button type="submit" class="btn btn-primary"><%= t('admin.settings.saveAll') %></button>
       </div>
     </form>
