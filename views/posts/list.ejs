@@ -25,7 +25,7 @@
     <% if (posts && posts.length > 0) { %>
       <div class="posts-grid">
         <% posts.forEach(post => { %>
-          <a href="/posts/<%= post.slug %>" class="post-card">
+          <a href="<%= locals.isStatic ? '/posts/'+post.slug+'.html' : '/posts/'+post.slug %>" class="post-card">
             <div class="post-card-cover">
               <% if (post.cover_image) { %>
                 <img src="<%= post.cover_image %>" alt="" loading="lazy">
@@ -99,10 +99,10 @@
     <div class="filter-section">
       <h3 class="filter-title"><%= t('posts.filterTags') %></h3>
       <div class="filter-chips" id="tagChips">
-        <a href="/posts<%= search ? '?search='+encodeURIComponent(search) : '' %>"
+        <a href="<%= locals.isStatic ? '/posts.html' : '/posts' %><%= search ? '?search='+encodeURIComponent(search) : '' %>"
            class="filter-chip <%= !currentTag ? 'active' : '' %>"><%= t('posts.filterAll') %></a>
         <% tags.forEach((tg, i) => { %>
-          <a href="/posts?tag=<%= encodeURIComponent(tg) %><%= search ? '&search='+encodeURIComponent(search) : '' %>"
+          <a href="<%= locals.isStatic ? '/posts.html' : '/posts' %>?tag=<%= encodeURIComponent(tg) %><%= search ? '&search='+encodeURIComponent(search) : '' %>"
              class="filter-chip <%= currentTag === tg ? 'active' : '' %> <%= i >= 12 ? 'chip-hidden' : '' %>"
              data-index="<%= i %>"><%= tg %></a>
         <% }) %>
@@ -117,9 +117,9 @@
     <div class="filter-section">
       <h3 class="filter-title"><%= t('posts.sort') %></h3>
       <div class="filter-chips">
-        <a href="/posts?sort=desc<%= currentTag ? '&tag='+encodeURIComponent(currentTag) : '' %><%= search ? '&search='+encodeURIComponent(search) : '' %>"
+        <a href="<%= locals.isStatic ? '/posts.html' : '/posts' %>?sort=desc<%= currentTag ? '&tag='+encodeURIComponent(currentTag) : '' %><%= search ? '&search='+encodeURIComponent(search) : '' %>"
            class="filter-chip <%= sort === 'desc' ? 'active' : '' %>"><%= t('posts.sortNewest') %></a>
-        <a href="/posts?sort=asc<%= currentTag ? '&tag='+encodeURIComponent(currentTag) : '' %><%= search ? '&search='+encodeURIComponent(search) : '' %>"
+        <a href="<%= locals.isStatic ? '/posts.html' : '/posts' %>?sort=asc<%= currentTag ? '&tag='+encodeURIComponent(currentTag) : '' %><%= search ? '&search='+encodeURIComponent(search) : '' %>"
            class="filter-chip <%= sort === 'asc' ? 'active' : '' %>"><%= t('posts.sortOldest') %></a>
       </div>
     </div>
@@ -127,3 +127,12 @@
 </div>
 
 <div class="sidebar-mask" id="filterMask"></div>
+
+<!-- 供 static-search.js 读取的 i18n 文案（避免在 JS 中硬编码文案） -->
+<div class="ssg-i18n" hidden
+     data-empty-title="<%= t('posts.emptyTitle') %>"
+     data-empty-hint="<%= t('posts.emptyHint') %>"
+     data-prev-page="<%= t('posts.prevPage') %>"
+     data-next-page="<%= t('posts.nextPage') %>"></div>
+
+<% if (locals.isStatic) { %><script src="/js/static-search.js" defer></script><% } %>

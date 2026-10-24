@@ -23,7 +23,7 @@
         </div>
       <% } %>
       <div class="article-footer" style="margin-top:30px; border-top:1px solid var(--hw-border); padding-top:20px;">
-        <a href="/posts" class="project-link"><i class="fas fa-arrow-left"></i> <%= t('posts.backToList') %></a>
+        <a href="<%= locals.isStatic ? '/posts.html' : '/posts' %>" class="project-link"><i class="fas fa-arrow-left"></i> <%= t('posts.backToList') %></a>
       </div>
     </article>
   </div>

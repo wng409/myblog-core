@@ -21,3 +21,6 @@ Thumbs.db
 *.log
 *.swp
 *~
+
+# 静态导出产物
+dist/

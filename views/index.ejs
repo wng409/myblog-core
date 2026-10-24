@@ -5,7 +5,7 @@
       <% if (bannerPosts && bannerPosts.length > 0) { %>
         <% bannerPosts.forEach((item, index) => { %>
           <div class="carousel-slide <%= index === 0 ? 'active' : '' %>">
-            <a href="<%= item.slug !== '#' ? '/posts/'+item.slug : '#' %>">
+            <a href="<%= item.slug !== '#' ? (locals.isStatic ? '/posts/'+item.slug+'.html' : '/posts/'+item.slug) : '#' %>">
               <div class="slide-image" style="background-image: url('<%= item.image %>');">
                 <div class="slide-overlay">
                   <h2><%= item.title %></h2>
@@ -47,7 +47,7 @@
       <% if (featuredPosts && featuredPosts.length > 0) { %>
         <% featuredPosts.forEach(post => { %>
           <article class="blog-card">
-            <a href="/posts/<%= post.slug %>">
+            <a href="<%= locals.isStatic ? '/posts/'+post.slug+'.html' : '/posts/'+post.slug %>">
               <div class="card-image-wrapper">
                 <div class="card-image" style="background-image: url('<%= post.cover_image %>');"></div>
               </div>
@@ -77,7 +77,7 @@
       <% if (latestPosts && latestPosts.length > 0) { %>
         <% latestPosts.forEach(post => { %>
           <article class="blog-card">
-            <a href="/posts/<%= post.slug %>">
+            <a href="<%= locals.isStatic ? '/posts/'+post.slug+'.html' : '/posts/'+post.slug %>">
               <div class="card-image-wrapper">
                 <div class="card-image" style="background-image: url('<%= post.cover_image %>');"></div>
               </div>
