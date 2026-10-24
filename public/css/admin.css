@@ -1481,3 +1481,66 @@ textarea.form-control { height: auto; padding: 10px 12px; line-height: 1.5; resi
   border-radius: 12px; box-shadow: var(--shadow);
 }
 .settings-savebar .savebar-hint { color: var(--text-muted); font-size: 0.88rem; }
+
+/* ============================================================
+   后台响应式：导航（PC 横排 / 移动 3 列网格） + 表单（PC 两列）
+   ============================================================ */
+.admin-container { max-width: 1200px; margin: 40px auto; padding: 0 20px; box-sizing: border-box; }
+
+/* 站点设置大表单：PC 两列网格（不再是一条窄居中条） */
+.settings-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 1100px;
+  align-items: start;
+}
+.settings-form .settings-block { margin-bottom: 0; }
+.settings-form .settings-savebar { grid-column: 1 / -1; }
+
+/* 导航：PC 横排（保持 space-between） */
+.admin-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 0;
+  margin-bottom: 30px;
+}
+
+/* 移动端：导航 3 列网格 + 表单单列堆叠 */
+@media (max-width: 768px) {
+  .admin-nav {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .admin-nav > a,
+  .admin-nav > form,
+  .admin-nav > form button {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .admin-nav > form { margin: 0; }
+  .admin-nav > form button { text-align: center; }
+  .admin-nav > form,
+  .admin-nav > .theme-switch { display: block; }
+  .admin-nav > .theme-switch { grid-column: span 1; }
+
+  .settings-form { grid-template-columns: 1fr; gap: 16px; }
+  .settings-block { padding: 20px 18px; }
+  .settings-savebar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    text-align: center;
+  }
+  .settings-savebar .btn-primary { width: 100%; box-sizing: border-box; }
+  .modern-upload { flex-wrap: wrap; }
+  .modern-upload .actions { width: 100%; }
+}
+
+/* 超窄屏：导航 2 列 */
+@media (max-width: 420px) {
+  .admin-nav { grid-template-columns: repeat(2, 1fr); }
+}

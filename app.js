@@ -986,6 +986,14 @@ app.get('/admin/settings', authOnly, csrfProtection, (req, res) => {
   });
 });
 
+// 站点设置（独立页面：Logo / 主题 / 关于我 / 页脚 / 语言 / 静态导出）
+app.get('/admin/site', authOnly, csrfProtection, (req, res) => {
+  res.render('admin/site', {
+    layout: false, settings: siteSettings, siteLang: currentLang,
+    csrfToken: req.csrfToken()
+  });
+});
+
 app.post('/admin/settings/language', authOnly, csrfProtection, (req, res) => {
   const lang = (req.body.site_lang || '').trim();
   if (!i18n.LANGS.includes(lang)) {

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <%- include('../partials/theme-init') %>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= t('admin.nav.site') %> · <%= siteName %></title>
+  <link rel="stylesheet" href="/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <%- include('../partials/brand-color') %>
+</head>
+<body data-csrf="<%= csrfToken %>" data-upload-failed="<%= t('admin.banner.uploadFailed') %>" data-upload-invalid="<%= t('admin.banner.uploadInvalid') %>" data-lang="<%= lang %>">
+  <div class="admin-container">
+    <div class="admin-header">
+      <h1><%= t('admin.nav.site') %></h1>
+      <a href="/" class="btn btn-secondary"><%= t('admin.viewSite') %></a>
+    </div>
+    <%- include('../partials/admin-nav', { active: 'site', csrfToken }) %>
+
+    <!-- ===== 站点设置：统一大表单（4 区块 + 单一 Sticky 保存）===== -->
+    <form method="POST" action="/admin/settings/site" enctype="multipart/form-data" class="settings-form" id="siteSettingsForm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <!-- 区块 1：基本设置 -->
+      <section class="settings-block">
+        <div class="block-head">
+          <h3><%= t('admin.settings.tabBasic') %></h3>
+          <p><%= t('admin.settings.basicDesc') %></p>
+        </div>
+        <div class="block-body">
+          <div class="form-group">
+            <label for="siteTitleInput"><%= t('admin.settings.siteTitle') %></label>
+            <input type="text" id="siteTitleInput" name="site_title" class="form-control" value="<%= settings.site_title || '' %>">
+          </div>
+          <div class="form-group">
+            <label for="siteSubtitleInput"><%= t('admin.settings.siteSubtitle') %></label>
+            <input type="text" id="siteSubtitleInput" name="site_subtitle" class="form-control" value="<%= settings.site_subtitle || '' %>">
+          </div>
+        </div>
+      </section>
+
+      <!-- 区块 2：品牌外观 -->
+      <section class="settings-block">
+        <div class="block-head">
+          <h3><%= t('admin.settings.tabAppearance') %></h3>
+          <p><%= t('admin.settings.appearanceDesc') %></p>
+        </div>
+        <div class="block-body">
+          <div class="form-group">
+            <label><%= t('admin.settings.logo') %></label>
+            <div class="modern-upload">
+              <div class="preview">
+                <% if (settings.site_logo) { %>
+                  <img src="<%= settings.site_logo %>" alt="logo">
+                <% } else { %>
+                  <i class="fas fa-feather-alt"></i>
+                <% } %>
+              </div>
+              <div class="actions">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('siteLogoFile').click()"><%= t('admin.settings.chooseImage') %></button>
+                <span class="hint"><%= t('admin.settings.logoHint') %></span>
+                <span class="file-name" id="siteLogoName"></span>
+                <% if (settings.site_logo) { %>
+                  <label class="remove-toggle"><input type="checkbox" name="remove_logo" value="1"> <%= t('admin.settings.remove') %></label>
+                <% } %>
+              </div>
+              <input type="file" id="siteLogoFile" name="site_logo_file" accept="image/*" hidden
+                     onchange="document.getElementById('siteLogoName').textContent = (this.files[0] && this.files[0].name) || '';">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="themeColorText"><%= t('admin.settings.themeColor') %></label>
+            <div class="input-group">
+              <span class="color-preview-box" id="themeColorBox">
+                <input type="color" id="themeColorInput" name="theme_color" value="<%= settings.theme_color || '#e60012' %>">
+              </span>
+              <input type="text" id="themeColorText" name="theme_color_text" class="form-control color-text-input" value="<%= settings.theme_color || '#e60012' %>" spellcheck="false">
+            </div>
+            <p class="hint"><%= t('admin.settings.themeColorHint') %></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 区块 3：关于我 -->
+      <section class="settings-block">
+        <div class="block-head">
+          <h3><%= t('admin.settings.tabAbout') %></h3>
+          <p><%= t('admin.settings.aboutDesc') %></p>
+        </div>
+        <div class="block-body">
+          <div class="form-group">
+            <label><%= t('admin.settings.avatar') %></label>
+            <div class="modern-upload">
+              <div class="preview preview--round">
+                <% if (settings.about_avatar) { %>
+                  <img src="<%= settings.about_avatar %>" alt="avatar">
+                <% } else { %>
+                  <i class="fas fa-user"></i>
+                <% } %>
+              </div>
+              <div class="actions">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('aboutAvatarFile').click()"><%= t('admin.settings.chooseImage') %></button>
+                <span class="file-name" id="aboutAvatarName"></span>
+                <% if (settings.about_avatar) { %>
+                  <label class="remove-toggle"><input type="checkbox" name="remove_avatar" value="1"> <%= t('admin.settings.remove') %></label>
+                <% } %>
+              </div>
+              <input type="file" id="aboutAvatarFile" name="about_avatar_file" accept="image/*" hidden
+                     onchange="document.getElementById('aboutAvatarName').textContent = (this.files[0] && this.files[0].name) || '';">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="aboutBioInput"><%= t('admin.settings.aboutBio') %></label>
+            <textarea id="aboutBioInput" name="about_bio" class="form-control" rows="4"><%= settings.about_bio || '' %></textarea>
+          </div>
+          <div class="form-group">
+            <label for="aboutGithubInput"><%= t('admin.settings.github') %></label>
+            <input type="text" id="aboutGithubInput" name="about_github" class="form-control" value="<%= settings.about_github || '' %>" placeholder="https://github.com/...">
+          </div>
+          <div class="form-group">
+            <label for="aboutEmailInput"><%= t('admin.settings.email') %></label>
+            <input type="text" id="aboutEmailInput" name="about_email" class="form-control" value="<%= settings.about_email || '' %>" placeholder="mailto:you@example.com">
+          </div>
+        </div>
+      </section>
+
+      <!-- 区块 4：页脚设置 -->
+      <section class="settings-block">
+        <div class="block-head">
+          <h3><%= t('admin.settings.tabFooter') %></h3>
+          <p><%= t('admin.settings.footerDesc') %></p>
+        </div>
+        <div class="block-body">
+          <div class="form-group">
+            <label for="footerSubtitleInput"><%= t('admin.settings.footerSubtitleLabel') %></label>
+            <input type="text" id="footerSubtitleInput" name="footer_subtitle" class="form-control" value="<%= settings.footer_subtitle || '' %>">
+          </div>
+          <div class="form-group">
+            <label for="footerTextInput"><%= t('admin.settings.copyrightLabel') %></label>
+            <input type="text" id="footerTextInput" name="footer_text" class="form-control" value="<%= settings.footer_text || '' %>">
+          </div>
+        </div>
+      </section>
+
+      <!-- Sticky 保存条：全页唯一保存按钮 -->
+      <div class="settings-savebar">
+        <span class="savebar-hint"><%= t('admin.settings.saveAll') %></span>
+        <button type="submit" class="btn btn-primary"><%= t('admin.settings.saveAll') %></button>
+      </div>
+    </form>
+
+    <!-- 语言 -->
+    <div class="settings-section">
+      <h2><%= t('admin.settings.lang') %></h2>
+      <p><%= t('admin.settings.langDesc') %></p>
+
+      <form method="POST" action="/admin/settings/language">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="form-group">
+          <label for="siteLangSelect"><%= t('admin.settings.lang') %></label>
+          <select name="site_lang" id="siteLangSelect">
+            <% LANGS.forEach(code => { %>
+              <option value="<%= code %>" <%= siteLang === code ? 'selected' : '' %>><%= getLangLabel(code) %></option>
+            <% }) %>
+          </select>
+        </div>
+        <button type="submit" class="btn"><%= t('admin.settings.saveLang') %></button>
+      </form>
+    </div>
+
+    <!-- 静态站导出 -->
+    <div class="settings-section">
+      <h2><%= t('admin.export.heading') %></h2>
+      <p><%= t('admin.export.desc') %></p>
+      <form method="POST" action="/admin/export-build" class="inline-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit" class="btn btn-export-build"><%= t('admin.export.build') %></button>
+      </form>
+      <a href="/admin/export-download" class="btn btn-secondary"><%= t('admin.export.download') %></a>
+    </div>
+
+  </div>
+
+  <script src="/js/admin-settings.js"></script>
+  <script src="/js/toast.js"></script>
+</body>
+</html>
