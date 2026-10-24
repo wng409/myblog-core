@@ -170,26 +170,39 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // 文件选择后即时预览（Dropzone 内的 .preview）
-  function bindPreview(fileId, previewSelector) {
+  // 「选择图片」按钮 -> 触发对应 file input（替代被 CSP 拦截的 inline onclick）
+  Array.prototype.forEach.call(document.querySelectorAll('[data-file-target]'), function (btn) {
+    btn.addEventListener('click', function () {
+      var inp = document.getElementById(btn.getAttribute('data-file-target'));
+      if (inp) inp.click();
+    });
+  });
+
+  // 文件选择后：即时预览 + 显示文件名（替代被 CSP 拦截的 inline onchange）
+  function bindUpload(fileId) {
     var file = document.getElementById(fileId);
-    var box = document.querySelector(previewSelector);
-    if (!file || !box) return;
+    if (!file) return;
+    var wrap = file.closest('.custom-upload');
+    var box = wrap && wrap.querySelector('.preview-box');
+    var nameEl = wrap && wrap.querySelector('.file-name');
     file.addEventListener('change', function () {
       var f = file.files && file.files[0];
-      if (!f) return;
-      var url = URL.createObjectURL(f);
+      if (nameEl) nameEl.textContent = f ? f.name : '';
+      if (!f || !box) return;
       var img = box.querySelector('img');
       if (!img) {
-        img = document.createElement('img');
         box.textContent = '';
+        img = document.createElement('img');
         box.appendChild(img);
       }
-      img.src = url;
+      // 用 data: URL 预览（CSP img-src 允许 data:，blob: 会被拦截）
+      var reader = new FileReader();
+      reader.onload = function (ev) { img.src = ev.target.result; };
+      reader.readAsDataURL(f);
     });
   }
-  bindPreview('siteLogoFile', '.settings-form .settings-block:nth-of-type(2) .modern-upload .preview');
-  bindPreview('aboutAvatarFile', '.settings-form .settings-block:nth-of-type(3) .modern-upload .preview');
+  bindUpload('siteLogoFile');
+  bindUpload('aboutAvatarFile');
 })();
 
 // 站点设置：社交链接动态列表（增删 + 同步到隐藏字段）
@@ -210,12 +223,16 @@ document.addEventListener('DOMContentLoaded', function () {
   try { links = JSON.parse(editor.dataset.links || '[]'); } catch (e) { links = []; }
   if (!Array.isArray(links)) links = [];
 
+  // 从 DOM 收集当前值写回 links / 隐藏域（用户输入不再被回滚）
   function sync() {
-    if (hidden) hidden.value = JSON.stringify(links);
-    editor.querySelectorAll('.social-row').forEach(function (row, i) {
-      row.querySelector('.social-type').value = TYPES.indexOf(links[i] && links[i].type) >= 0 ? links[i].type : 'link';
-      row.querySelector('.social-url').value = (links[i] && links[i].url) || '';
+    links = Array.prototype.map.call(editor.querySelectorAll('.social-row'), function (row) {
+      var type = row.querySelector('.social-type').value;
+      return {
+        type: TYPES.indexOf(type) >= 0 ? type : 'link',
+        url: (row.querySelector('.social-url').value || '').trim()
+      };
     });
+    if (hidden) hidden.value = JSON.stringify(links);
   }
 
   function addRow(data) {
@@ -236,8 +253,8 @@ document.addEventListener('DOMContentLoaded', function () {
     updIcon();
     sel.addEventListener('change', updIcon);
     del.addEventListener('click', function () {
-      var idx = Array.prototype.indexOf.call(editor.querySelectorAll('.social-row'), row);
-      if (idx >= 0) { links.splice(idx, 1); row.remove(); sync(); }
+      row.remove();
+      sync();
     });
     sel.addEventListener('change', sync);
     url.addEventListener('input', sync);

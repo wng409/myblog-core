@@ -213,6 +213,22 @@ SOFTWARE.
 
 > Font Awesome 说明：代码采用 MIT 许可，图标采用 CC BY 4.0，字体采用 SIL OFL 1.1，详见 https://fontawesome.com/license/free。
 
+## 开发规范（CSP 与前端）
+
+服务端通过 `helmet` 启用了严格的 CSP（见 `app.js`），其中 `scriptSrcAttr: 'none'`、`img-src 'self' data: https:`。所有前端代码必须遵守：
+
+- **禁止使用内联事件（`onclick` / `onchange` / `oninput` 等）**：CSP 的 `scriptSrcAttr: 'none'` 会让浏览器直接拦截，表现为"点击无反应"，排查困难。所有事件必须在外部 JS 文件中通过 `addEventListener` 绑定，需要传参时使用 `data-*` 属性。
+  - 示例：用 `<button data-file-target="siteLogoFile">` 搭配 `public/js/*.js` 中的 `document.querySelectorAll('[data-file-target]')`，而不是 `onclick="document.getElementById('siteLogoFile').click()"`。
+- **本地图片预览必须使用 `data:` URL**：CSP 的 `img-src` 不允许 `blob:`，`URL.createObjectURL(...)` 会被拦截。请用 `FileReader` 读取文件，把 `readAsDataURL()` 的结果赋给 `img.src`。
+- **禁止内联 `<script>` 代码块**：所有 JavaScript 统一放在 `public/js/` 下。
+- `style` 行内属性可用（未限制 `style-src-attr`），但优先使用 `public/css/` 中定义的类名。
+
+提交前自检（无输出即为通过）：
+
+```bash
+grep -rnE '\son[a-z]+="' views/
+```
+
 ## 贡献指南：多语言（i18n）
 
 本仓库内置零依赖的多语言方案，欢迎贡献新语言或完善现有翻译。

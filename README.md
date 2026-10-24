@@ -213,6 +213,22 @@ SOFTWARE.
 
 > Font Awesome note: the code is MIT-licensed, while icons are licensed under CC BY 4.0 and fonts under SIL OFL 1.1. See https://fontawesome.com/license/free for details.
 
+## Coding Standards (CSP & Frontend)
+
+The server enables a strict Content Security Policy via `helmet` (see `app.js`), notably `scriptSrcAttr: 'none'` and `img-src 'self' data: https:`. All frontend code MUST comply:
+
+- **No inline event handlers** (`onclick` / `onchange` / `oninput` / ...). With `scriptSrcAttr: 'none'` the browser blocks them and the interaction silently fails (the element simply does not react). Bind every event from external JS files via `addEventListener`, and pass data through `data-*` attributes.
+  - Example: use `<button data-file-target="siteLogoFile">` plus `document.querySelectorAll('[data-file-target]')` in `public/js/*.js`, instead of `onclick="document.getElementById('siteLogoFile').click()"`.
+- **Local image preview must use `data:` URLs.** `img-src` does not allow `blob:`, so `URL.createObjectURL(...)` is blocked. Read the file with `FileReader` and assign the result of `readAsDataURL()` to `img.src`.
+- **No inline `<script>` blocks.** Keep all JavaScript in `public/js/`.
+- Inline `style` attributes are allowed (`style-src-attr` is not restricted), but prefer classes defined in `public/css/`.
+
+Quick self-check before submitting (no output means you are clean):
+
+```bash
+grep -rnE '\son[a-z]+="' views/
+```
+
 ## Contributing: Localization (i18n)
 
 The site ships with a zero-dependency i18n layer, and new languages or translation fixes are always welcome.

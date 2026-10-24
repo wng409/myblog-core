@@ -58,15 +58,14 @@
                 <% } %>
               </div>
               <div class="upload-actions">
-                <button type="button" class="btn-outline" onclick="document.getElementById('siteLogoFile').click()"><%= t('admin.settings.chooseImage') %></button>
+                <button type="button" class="btn-outline" data-file-target="siteLogoFile"><%= t('admin.settings.chooseImage') %></button>
                 <span class="hint"><%= t('admin.settings.logoHint') %></span>
                 <span class="file-name" id="siteLogoName"></span>
                 <% if (settings.site_logo) { %>
                   <label class="remove-toggle"><input type="checkbox" name="remove_logo" value="1"> <%= t('admin.settings.remove') %></label>
                 <% } %>
               </div>
-              <input type="file" id="siteLogoFile" name="site_logo_file" accept="image/*" style="display:none;"
-                     onchange="document.getElementById('siteLogoName').textContent = (this.files[0] && this.files[0].name) || '';">
+              <input type="file" id="siteLogoFile" name="site_logo_file" accept="image/*" style="display:none;">
             </div>
           </div>
           <div class="control-item">
@@ -100,14 +99,13 @@
                 <% } %>
               </div>
               <div class="upload-actions">
-                <button type="button" class="btn-outline" onclick="document.getElementById('aboutAvatarFile').click()"><%= t('admin.settings.chooseImage') %></button>
+                <button type="button" class="btn-outline" data-file-target="aboutAvatarFile"><%= t('admin.settings.chooseImage') %></button>
                 <span class="file-name" id="aboutAvatarName"></span>
                 <% if (settings.about_avatar) { %>
                   <label class="remove-toggle"><input type="checkbox" name="remove_avatar" value="1"> <%= t('admin.settings.remove') %></label>
                 <% } %>
               </div>
-              <input type="file" id="aboutAvatarFile" name="about_avatar_file" accept="image/*" style="display:none;"
-                     onchange="document.getElementById('aboutAvatarName').textContent = (this.files[0] && this.files[0].name) || '';">
+              <input type="file" id="aboutAvatarFile" name="about_avatar_file" accept="image/*" style="display:none;">
             </div>
           </div>
           <div class="control-item">
