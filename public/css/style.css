@@ -1671,3 +1671,9 @@ main pre code {
   font-size: 0.85rem;
   margin-left: 10px;
 }
+
+/* ---------- 站点 Logo 与「关于我」链接 ---------- */
+.site-logo { height: 32px; width: auto; margin-right: 8px; vertical-align: middle; border-radius: 6px; }
+.about-links { margin-top: 14px; display: flex; gap: 16px; flex-wrap: wrap; }
+.about-link { color: var(--hw-red); text-decoration: none; font-size: 0.95rem; }
+.about-link:hover { text-decoration: underline; }

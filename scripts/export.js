@@ -168,7 +168,7 @@ async function main() {
     ORDER BY created_at DESC`);
 
   // 2.1 站点个性化设置（标题/副标题/主题色/关于我/页脚），注入模板
-  CURRENT_SETTINGS = (await dbGet(db, 'SELECT site_title, site_subtitle, theme_color, about_bio, footer_text FROM settings WHERE id = 1')) || {};
+  CURRENT_SETTINGS = (await dbGet(db, 'SELECT site_title, site_subtitle, theme_color, about_bio, about_github, about_email, footer_text, footer_subtitle, site_logo, about_avatar FROM settings WHERE id = 1')) || {};
 
   // 3. 生成 dist/api/posts.json（剔除正文大字段，只留搜索所需）
   //    正文单独一次性查出建立 contentMap（第 6 步详情页复用，避免 N+1）

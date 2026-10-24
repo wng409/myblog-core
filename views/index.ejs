@@ -105,8 +105,21 @@
       <% if (locals.settings.site_subtitle) { %><p><%= locals.settings.site_subtitle %></p><% } %>
     </div>
     <div class="about-container">
+      <% if (locals.settings.about_avatar) { %>
+        <div class="about-image">
+          <img src="<%= locals.settings.about_avatar %>" alt="avatar" class="avatar">
+        </div>
+      <% } %>
       <div class="about-content">
         <p><%= locals.settings.about_bio %></p>
+        <div class="about-links">
+          <% if (locals.settings.about_github) { %>
+            <a href="<%= locals.settings.about_github %>" class="about-link" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
+          <% } %>
+          <% if (locals.settings.about_email) { %>
+            <a href="<%= /^mailto:/.test(locals.settings.about_email) ? locals.settings.about_email : 'mailto:' + locals.settings.about_email %>" class="about-link"><i class="fas fa-envelope"></i> Email</a>
+          <% } %>
+        </div>
       </div>
     </div>
   </div>

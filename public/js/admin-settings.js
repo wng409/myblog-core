@@ -148,3 +148,17 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 });
+// 站点设置：主题色选择器 <-> 文本 <-> 预览色块 联动
+(function () {
+  var input = document.getElementById('themeColorInput');
+  var text = document.getElementById('themeColorText');
+  var preview = document.getElementById('themeColorPreview');
+  if (!input) return;
+  if (preview && preview.dataset && preview.dataset.color) {
+    preview.style.background = preview.dataset.color;
+  }
+  input.addEventListener('input', function () {
+    if (text) text.value = input.value;
+    if (preview) preview.style.background = input.value;
+  });
+})();

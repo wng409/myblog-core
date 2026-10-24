@@ -105,7 +105,12 @@ db.serialize(() => {
     ['site_subtitle', "TEXT DEFAULT ''"],
     ['theme_color', "TEXT DEFAULT '#e60012'"],
     ['about_bio', "TEXT DEFAULT ''"],
-    ['footer_text', "TEXT DEFAULT ''"]
+    ['footer_text', "TEXT DEFAULT ''"],
+    ['site_logo', "TEXT DEFAULT ''"],
+    ['footer_subtitle', "TEXT DEFAULT ''"],
+    ['about_avatar', "TEXT DEFAULT ''"],
+    ['about_github', "TEXT DEFAULT ''"],
+    ['about_email', "TEXT DEFAULT ''"]
   ].forEach(([col, def]) => {
     db.run(`ALTER TABLE settings ADD COLUMN ${col} ${def}`, (err) => {
       if (err && !/duplicate column/i.test(err.message)) {
@@ -126,7 +131,7 @@ users.initUserTables(db);
 // 站点个性化设置（启动加载；后台保存后调用 loadSiteSettings 刷新）
 let siteSettings = {};
 function loadSiteSettings(cb) {
-  db.get('SELECT site_lang, site_title, site_subtitle, theme_color, about_bio, footer_text FROM settings WHERE id = 1', (err, row) => {
+  db.get('SELECT site_lang, site_title, site_subtitle, theme_color, about_bio, about_github, about_email, footer_text, footer_subtitle, site_logo, about_avatar FROM settings WHERE id = 1', (err, row) => {
     siteSettings = row || {};
     if (!err && row && i18n.LANGS.includes(row.site_lang)) {
       currentLang = row.site_lang;
@@ -995,27 +1000,63 @@ app.post('/admin/settings/language', authOnly, csrfProtection, (req, res) => {
 });
 
 // 站点个性化设置保存（站点标题/副标题/主题色/关于我/页脚文本）
+// 站点设置字段清洗器：仅更新本次提交的字段（支持卡片式分表单保存，避免互相覆盖）
+const SITE_FIELD_SETTERS = {
+  site_title:      (v) => String(v == null ? '' : v).trim().slice(0, 60),
+  site_subtitle:   (v) => String(v == null ? '' : v).trim().slice(0, 120),
+  theme_color:     (v) => { const x = String(v == null ? '' : v).trim().slice(0, 16); return /^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(x) ? x : '#e60012'; },
+  about_bio:       (v) => String(v == null ? '' : v).trim().slice(0, 1000),
+  about_github:    (v) => String(v == null ? '' : v).trim().slice(0, 200),
+  about_email:     (v) => String(v == null ? '' : v).trim().slice(0, 200),
+  footer_text:     (v) => String(v == null ? '' : v).trim().slice(0, 200),
+  footer_subtitle: (v) => String(v == null ? '' : v).trim().slice(0, 200),
+  // 图片路径：仅接受站内绝对路径（由上传路由写入；此处允许手动清空）
+  site_logo:       (v) => { const x = String(v == null ? '' : v).trim().slice(0, 300); return /^\/[\w\-./]*$/.test(x) ? x : ''; },
+  about_avatar:    (v) => { const x = String(v == null ? '' : v).trim().slice(0, 300); return /^\/[\w\-./]*$/.test(x) ? x : ''; }
+};
+
 app.post('/admin/settings/site', authOnly, csrfProtection, (req, res) => {
-  const clean = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
-  const siteTitle = clean(req.body.site_title, 60);
-  const siteSubtitle = clean(req.body.site_subtitle, 120);
-  const aboutBio = clean(req.body.about_bio, 1000);
-  const footerText = clean(req.body.footer_text, 200);
-  // 主题色：仅允许 #RRGGBB / #RGB，非法则回退默认
-  let themeColor = clean(req.body.theme_color, 16);
-  if (!/^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(themeColor)) themeColor = '#e60012';
-  db.run(
-    'UPDATE settings SET site_title=?, site_subtitle=?, theme_color=?, about_bio=?, footer_text=? WHERE id = 1',
-    [siteTitle, siteSubtitle, themeColor, aboutBio, footerText],
-    function (err) {
-      if (err) return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.err.saveFailed')));
-      loadSiteSettings(() => {
-        logAction(req, 'update_settings', 'site');
-        res.redirect('/admin/settings?msg=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.msg.siteSaved')));
-      });
+  const sets = [], vals = [];
+  Object.keys(SITE_FIELD_SETTERS).forEach((k) => {
+    if (Object.prototype.hasOwnProperty.call(req.body, k)) {
+      sets.push(`${k} = ?`);
+      vals.push(SITE_FIELD_SETTERS[k](req.body[k]));
     }
-  );
+  });
+  if (!sets.length) {
+    return res.redirect('/admin/settings?msg=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.msg.siteSaved')));
+  }
+  db.run(`UPDATE settings SET ${sets.join(', ')} WHERE id = 1`, vals, function (err) {
+    if (err) return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.err.saveFailed')));
+    loadSiteSettings(() => {
+      logAction(req, 'update_settings', 'site');
+      res.redirect('/admin/settings?msg=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.msg.siteSaved')));
+    });
+  });
 });
+
+// Logo / 头像上传（复用全局 multer 实例 upload，写入 settings 对应字段）
+function handleSettingImage(field, column) {
+  return (req, res) => {
+    if (!req.file) {
+      return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.err.uploadFailed')));
+    }
+    const url = fileUrl(req.file);
+    db.run(`UPDATE settings SET ${column} = ? WHERE id = 1`, [url], (err) => {
+      if (err) {
+        console.error(`[${field}] 保存失败:`, err.message);
+        return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.err.saveFailed')));
+      }
+      loadSiteSettings(() => {
+        logAction(req, field, url);
+        res.redirect('/admin/settings?msg=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.msg.uploaded')));
+      });
+    });
+  };
+}
+
+app.post('/admin/settings/upload-logo', authOnly, upload.single('logo'), csrfProtection, handleSettingImage('upload_logo', 'site_logo'));
+app.post('/admin/settings/upload-avatar', authOnly, upload.single('avatar'), csrfProtection, handleSettingImage('upload_avatar', 'about_avatar'));
 
 // ============================================================
 // 静态站导出（一键生成 / 打包下载）
