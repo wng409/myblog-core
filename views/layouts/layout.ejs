@@ -28,6 +28,7 @@
     <nav class="pc-nav">
       <a href="/"><%= t('nav.home') %></a>
       <a href="<%= locals.isStatic ? '/posts.html' : '/posts' %>"><%= t('nav.posts') %></a>
+      <a href="/#about"><%= t('nav.about') %></a>
     </nav>
 
     <div class="nav-right">
@@ -61,6 +62,7 @@
     <ul class="mobile-menu-list">
       <li><a href="/"><%= t('nav.home') %><span class="arrow">›</span></a></li>
       <li><a href="<%= locals.isStatic ? '/posts.html' : '/posts' %>"><%= t('nav.posts') %><span class="arrow">›</span></a></li>
+      <li><a href="/#about"><%= t('nav.about') %><span class="arrow">›</span></a></li>
     </ul>
 
     <div class="mobile-menu-footer">
@@ -89,6 +91,9 @@
           <ul class="footer-links">
             <li><a href="/"><%= t('nav.home') %></a></li>
             <li><a href="<%= locals.isStatic ? '/posts.html' : '/posts' %>"><%= t('nav.posts') %></a></li>
+            <li><a href="/#featured"><%= t('footer.featured') %></a></li>
+            <li><a href="/#latest"><%= t('footer.latest') %></a></li>
+            <li><a href="/#about"><%= t('nav.about') %></a></li>
           </ul>
         </div>
         <div class="footer-column">
