@@ -2,9 +2,11 @@
 <html lang="zh-CN" class="<%= locals.darkMode ? 'dark' : '' %>">
 <head>
   <%- include('../partials/theme-init') %>
+  <% const SITE_TITLE = (locals.settings && locals.settings.site_title) || siteName; %>
+  <style>:root { --brand-color: <%= (locals.settings && locals.settings.theme_color) || '#e60012' %>; }</style>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= locals.titleKey ? t(locals.titleKey) + ' · ' + siteName : (locals.title ? locals.title + ' · ' + siteName : siteName) %></title>
+  <title><%= locals.titleKey ? t(locals.titleKey) + ' · ' + SITE_TITLE : (locals.title ? locals.title + ' · ' + SITE_TITLE : SITE_TITLE) %></title>
   <link rel="stylesheet" href="/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -15,7 +17,7 @@
   <div class="container header-container">
     <div class="logo">
       <i class="fas fa-feather-alt"></i>
-      <a href="/"><span><%= siteName %></span></a>
+      <a href="/"><span><%= SITE_TITLE %></span></a>
     </div>
 
     <!-- PC 横向导航 -->
@@ -41,7 +43,7 @@
     <div class="mobile-menu-header">
       <div class="logo">
         <i class="fas fa-feather-alt"></i>
-        <span><%= siteName %></span>
+        <span><%= SITE_TITLE %></span>
       </div>
       <button class="menu-close" id="menuClose" type="button" aria-label="<%= t('nav.close') %>">
         <i class="fas fa-times"></i>
@@ -75,14 +77,14 @@
           </ul>
         </div>
         <div class="footer-column">
-          <h3><%= siteName %></h3>
+          <h3><%= SITE_TITLE %></h3>
           <ul class="footer-links">
             <li><%= t('footer.builtWith') %></li>
           </ul>
         </div>
       </div>
       <div class="copyright">
-        <p>&copy; <%= new Date().getFullYear() %> <%= siteName %>. Powered by Node.js.</p>
+        <p>&copy; <%= new Date().getFullYear() %> <%= (locals.settings && locals.settings.footer_text) || (SITE_TITLE + '. Powered by Node.js.') %></p>
       </div>
     </div>
   </footer>

@@ -58,7 +58,7 @@
                 <td>
                   <button type="button" class="btn-sm btn-secondary" data-action="up"><%= t('admin.banner.up') %></button>
                   <button type="button" class="btn-sm btn-secondary" data-action="down"><%= t('admin.banner.down') %></button>
-                  <button type="button" class="btn-sm" style="background:#c4000f;color:white;" data-action="delete"><%= t('admin.banner.delete') %></button>
+                  <button type="button" class="btn-sm btn-danger" data-action="delete"><%= t('admin.banner.delete') %></button>
                 </td>
               </tr>
             <% }) %>
@@ -93,23 +93,64 @@
       </form>
     </div>
 
-    <!-- 语言 / Language -->
+    <!-- 站点信息（个性化设置） -->
     <div class="settings-section">
-      <h2>语言 / Language</h2>
-      <p>选择前台首页的显示语言。 / Choose the display language for the front-end home page.</p>
+      <h2><%= t('admin.settings.site') %></h2>
+
+      <form method="POST" action="/admin/settings/site">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="form-group">
+          <label for="siteTitleInput"><%= t('admin.settings.siteTitle') %></label>
+          <input type="text" id="siteTitleInput" name="site_title" value="<%= settings.site_title || '' %>">
+        </div>
+        <div class="form-group">
+          <label for="siteSubtitleInput"><%= t('admin.settings.siteSubtitle') %></label>
+          <input type="text" id="siteSubtitleInput" name="site_subtitle" value="<%= settings.site_subtitle || '' %>">
+        </div>
+        <div class="form-group">
+          <label for="themeColorInput"><%= t('admin.settings.themeColor') %></label>
+          <input type="color" id="themeColorInput" name="theme_color" value="<%= settings.theme_color || '#e60012' %>">
+        </div>
+        <div class="form-group">
+          <label for="aboutBioInput"><%= t('admin.settings.aboutBio') %></label>
+          <textarea id="aboutBioInput" name="about_bio" rows="4"><%= settings.about_bio || '' %></textarea>
+        </div>
+        <div class="form-group">
+          <label for="footerTextInput"><%= t('admin.settings.footerText') %></label>
+          <input type="text" id="footerTextInput" name="footer_text" value="<%= settings.footer_text || '' %>">
+        </div>
+        <button type="submit" class="btn"><%= t('admin.settings.saveSite') %></button>
+      </form>
+    </div>
+
+    <!-- 语言 -->
+    <div class="settings-section">
+      <h2><%= t('admin.settings.lang') %></h2>
+      <p><%= t('admin.settings.langDesc') %></p>
 
       <form method="POST" action="/admin/settings/language">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="form-group">
-          <label for="siteLangSelect">语言 / Language</label>
+          <label for="siteLangSelect"><%= t('admin.settings.lang') %></label>
           <select name="site_lang" id="siteLangSelect">
             <% LANGS.forEach(code => { %>
               <option value="<%= code %>" <%= siteLang === code ? 'selected' : '' %>><%= getLangLabel(code) %></option>
             <% }) %>
           </select>
         </div>
-        <button type="submit" class="btn">保存语言 / Save language</button>
+        <button type="submit" class="btn"><%= t('admin.settings.saveLang') %></button>
       </form>
+    </div>
+
+    <!-- 静态站导出 -->
+    <div class="settings-section">
+      <h2><%= t('admin.export.heading') %></h2>
+      <p><%= t('admin.export.desc') %></p>
+      <form method="POST" action="/admin/export-build" class="inline-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit" class="btn btn-export-build"><%= t('admin.export.build') %></button>
+      </form>
+      <a href="/admin/export-download" class="btn btn-secondary"><%= t('admin.export.download') %></a>
     </div>
   </div>
 
@@ -134,7 +175,7 @@
       <td>
         <button type="button" class="btn-sm btn-secondary" data-action="up"><%= t('admin.banner.up') %></button>
         <button type="button" class="btn-sm btn-secondary" data-action="down"><%= t('admin.banner.down') %></button>
-        <button type="button" class="btn-sm" style="background:#c4000f;color:white;" data-action="delete"><%= t('admin.banner.delete') %></button>
+        <button type="button" class="btn-sm btn-danger" data-action="delete"><%= t('admin.banner.delete') %></button>
       </td>
     </tr>
   </template>

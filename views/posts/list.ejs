@@ -135,4 +135,8 @@
      data-prev-page="<%= t('posts.prevPage') %>"
      data-next-page="<%= t('posts.nextPage') %>"></div>
 
-<% if (locals.isStatic) { %><script src="/js/static-search.js" defer></script><% } %>
+<% if (locals.isStatic) { %>
+  <script src="/js/static-search.js" defer></script>
+<% } else { %>
+  <script src="/js/posts.js" defer></script>
+<% } %>

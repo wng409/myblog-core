@@ -1261,3 +1261,18 @@ html[data-theme] .editor-prompt input {
         white-space: nowrap;
       }
     }
+
+/* ---------- 站点设置 / 空态 / 文本色（语义类） ---------- */
+.btn-danger { background: var(--hw-red-dark); color: var(--hw-white); }
+.btn-danger:hover { background: var(--hw-red); }
+input[type="color"] {
+  width: 64px; height: 36px; padding: 2px;
+  border: 1px solid var(--border); border-radius: 4px;
+  background: var(--card-bg); cursor: pointer; vertical-align: middle;
+}
+.empty-icon { font-size: 48px; color: var(--border-mid); }
+.text-muted { color: var(--text-faint); }
+
+/* ---------- 静态站导出区块 ---------- */
+.inline-form { display: inline-block; margin-right: 10px; }
+.btn-export-build { margin: 0; }

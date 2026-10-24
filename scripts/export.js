@@ -42,6 +42,7 @@ const HOME_LATEST_LIMIT = 6;      // 首页“最新文章”条数（与 app.js
 const HOME_FEATURED_LIMIT = 3;    // 首页“推荐文章”条数（静态站由最新文章派生）
 const HOME_BANNER_LIMIT = 5;      // 首页 Banner 条数（静态站由最新文章派生）
 const SITE_NAME = process.env.SITE_NAME || 'MyBlog';
+let CURRENT_SETTINGS = {};                  // 导出期站点个性化设置（main 中加载后注入模板）
 const LANG = i18n.DEFAULT_LANG;             // 导出默认使用中文
 const t = (key) => i18n.t(LANG, key);       // 导出期翻译函数（注入模板）
 
@@ -106,7 +107,7 @@ function rewriteInternalLinks(html) {
 async function renderBody(view, data) {
   return ejs.renderFile(
     path.join(VIEWS_DIR, view),
-    Object.assign({ isStatic: true, fmtTime, t }, data)
+    Object.assign({ isStatic: true, fmtTime, t, settings: CURRENT_SETTINGS }, data)
   );
 }
 
@@ -120,7 +121,8 @@ async function renderPage(view, data) {
       body,
       titleKey: data.titleKey,
       title: data.title || SITE_NAME,
-      siteName: SITE_NAME,
+      siteName: CURRENT_SETTINGS.site_title || SITE_NAME,
+      settings: CURRENT_SETTINGS,
       // darkMode 不传：静态站无 session，服务端不输出 dark class，
       // 主题完全交给 head 内 theme-init 同步脚本处理（防闪烁）
       isStatic: true,
@@ -164,6 +166,9 @@ async function main() {
     FROM posts
     WHERE deleted_at IS NULL
     ORDER BY created_at DESC`);
+
+  // 2.1 站点个性化设置（标题/副标题/主题色/关于我/页脚），注入模板
+  CURRENT_SETTINGS = (await dbGet(db, 'SELECT site_title, site_subtitle, theme_color, about_bio, footer_text FROM settings WHERE id = 1')) || {};
 
   // 3. 生成 dist/api/posts.json（剔除正文大字段，只留搜索所需）
   //    正文单独一次性查出建立 contentMap（第 6 步详情页复用，避免 N+1）

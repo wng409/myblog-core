@@ -99,6 +99,21 @@ db.serialize(() => {
     }
   });
 
+  // 站点个性化设置字段（幂等迁移）
+  [
+    ['site_title', "TEXT DEFAULT ''"],
+    ['site_subtitle', "TEXT DEFAULT ''"],
+    ['theme_color', "TEXT DEFAULT '#e60012'"],
+    ['about_bio', "TEXT DEFAULT ''"],
+    ['footer_text', "TEXT DEFAULT ''"]
+  ].forEach(([col, def]) => {
+    db.run(`ALTER TABLE settings ADD COLUMN ${col} ${def}`, (err) => {
+      if (err && !/duplicate column/i.test(err.message)) {
+        console.error(`[迁移失败] settings.${col}:`, err.message);
+      }
+    });
+  });
+
   db.run(`ALTER TABLE posts ADD COLUMN deleted_at DATETIME`, (err) => {
     if (err && !/duplicate column/i.test(err.message)) {
       console.error('[迁移失败] deleted_at:', err.message);
@@ -108,11 +123,18 @@ db.serialize(() => {
 
 users.initUserTables(db);
 
-db.get('SELECT site_lang FROM settings WHERE id = 1', (err, row) => {
-  if (!err && row && i18n.LANGS.includes(row.site_lang)) {
-    currentLang = row.site_lang;
-  }
-});
+// 站点个性化设置（启动加载；后台保存后调用 loadSiteSettings 刷新）
+let siteSettings = {};
+function loadSiteSettings(cb) {
+  db.get('SELECT site_lang, site_title, site_subtitle, theme_color, about_bio, footer_text FROM settings WHERE id = 1', (err, row) => {
+    siteSettings = row || {};
+    if (!err && row && i18n.LANGS.includes(row.site_lang)) {
+      currentLang = row.site_lang;
+    }
+    if (cb) cb();
+  });
+}
+loadSiteSettings();
 
 db.get('SELECT COUNT(*) AS c FROM users', (err, row) => {
   if (err) { console.error('用户表检查失败:', err); return; }
@@ -315,6 +337,7 @@ app.use((req, res, next) => {
   res.locals.currentUser = (req.session && req.session.user) || null;
   res.locals.lang = currentLang;
   res.locals.t = (key) => i18n.t(currentLang, key);
+  res.locals.settings = siteSettings;
   next();
 });
 
@@ -951,6 +974,7 @@ app.get('/admin/settings', authOnly, csrfProtection, (req, res) => {
       if (err) posts = [];
       res.render('admin/settings', {
         layout: false, bannerItems, featuredIds, posts, siteLang: currentLang,
+        settings: siteSettings,
         csrfToken: req.csrfToken()
       });
     });
@@ -968,6 +992,64 @@ app.post('/admin/settings/language', authOnly, csrfProtection, (req, res) => {
     logAction(req, 'update_language', lang);
     res.redirect('/admin/settings?msg=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.msg.langUpdated')));
   });
+});
+
+// 站点个性化设置保存（站点标题/副标题/主题色/关于我/页脚文本）
+app.post('/admin/settings/site', authOnly, csrfProtection, (req, res) => {
+  const clean = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
+  const siteTitle = clean(req.body.site_title, 60);
+  const siteSubtitle = clean(req.body.site_subtitle, 120);
+  const aboutBio = clean(req.body.about_bio, 1000);
+  const footerText = clean(req.body.footer_text, 200);
+  // 主题色：仅允许 #RRGGBB / #RGB，非法则回退默认
+  let themeColor = clean(req.body.theme_color, 16);
+  if (!/^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(themeColor)) themeColor = '#e60012';
+  db.run(
+    'UPDATE settings SET site_title=?, site_subtitle=?, theme_color=?, about_bio=?, footer_text=? WHERE id = 1',
+    [siteTitle, siteSubtitle, themeColor, aboutBio, footerText],
+    function (err) {
+      if (err) return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.err.saveFailed')));
+      loadSiteSettings(() => {
+        logAction(req, 'update_settings', 'site');
+        res.redirect('/admin/settings?msg=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.msg.siteSaved')));
+      });
+    }
+  );
+});
+
+// ============================================================
+// 静态站导出（一键生成 / 打包下载）
+// ============================================================
+const { execFile: runExport } = require('child_process');
+
+app.post('/admin/export-build', authOnly, csrfProtection, (req, res) => {
+  const script = path.join(ROOT_DIR, 'scripts', 'export.js');
+  runExport(process.execPath, [script], { cwd: ROOT_DIR, timeout: 120000 }, (err, stdout, stderr) => {
+    if (err) {
+      console.error('[export-build] 失败:', stderr || err.message);
+      return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.export.failed')));
+    }
+    logAction(req, 'export_build', 'dist');
+    res.redirect('/admin/settings?msg=' + encodeURIComponent(i18n.t(currentLang, 'admin.export.built')));
+  });
+});
+
+app.get('/admin/export-download', authOnly, (req, res) => {
+  const distDir = path.join(ROOT_DIR, 'dist');
+  if (!fs.existsSync(distDir)) {
+    return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.export.noDist')));
+  }
+  const archiver = require('archiver');
+  res.attachment('myblog-dist-' + Date.now() + '.zip');
+  const archive = archiver('zip', { zlib: { level: 9 } });
+  archive.on('error', (e) => {
+    console.error('[export-download] 失败:', e.message);
+    if (!res.headersSent) res.status(500).end();
+  });
+  archive.pipe(res);
+  archive.directory(distDir, false);
+  archive.finalize();
+  logAction(req, 'export_download', 'dist');
 });
 
 app.post('/admin/settings', authOnly, csrfProtection, (req, res) => {
