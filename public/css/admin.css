@@ -1738,10 +1738,12 @@ body:has(.admin-container) {
 }
 
 /* ============================================================
-   core 独有样式：站点设置页 / 社交编辑 / color 输入 / login 动画
-   （上述 class 在 blog 中不存在，合并时保留，避免 core 独有页面缺样式）
+   core 独有样式：站点设置页 / 社交编辑  —— HarmonyOS 设计语言
+   （这些 class blog 上游不存在；此处采用与后台整体一致的观感：
+     白色卡片 + 柔和阴影 + 圆角输入框 + 品牌色强调 + 三级文字色）
    ============================================================ */
 
+/* ---------- login 抖动动画 ---------- */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   20% { transform: translateX(-8px); }
@@ -1749,306 +1751,129 @@ body:has(.admin-container) {
   60% { transform: translateX(-5px); }
   80% { transform: translateX(5px); }
 }
-@keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      20% { transform: translateX(-8px); }
-      40% { transform: translateX(8px); }
-      60% { transform: translateX(-5px); }
-      80% { transform: translateX(5px); }
-    }
-.btn-danger { background: var(--hw-red-dark); color: var(--hw-white); }
-.btn-danger:hover { background: var(--hw-red); }
-input[type="color"] {
-  width: 64px; height: 36px; padding: 2px;
-  border: 1px solid var(--border); border-radius: 4px;
-  background: var(--card-bg); cursor: pointer; vertical-align: middle;
-}
-.empty-icon { font-size: 48px; color: var(--border-mid); }
-.btn-export-build { margin: 0; }
-.settings-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
-}
-.setting-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: var(--shadow);
-}
-.setting-card h3 {
-  margin: 0 0 14px;
-  font-size: 1.05rem;
-  color: var(--text-strong);
-}
-.setting-card label {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-.setting-card input[type="text"],
-.setting-card input[type="email"],
-.setting-card input[type="url"],
-.setting-card textarea,
-.setting-card select {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  background: var(--bg);
-  color: var(--text);
-  font: inherit;
-  box-sizing: border-box;
-}
-.setting-card input[type="text"]:focus,
-.setting-card textarea:focus,
-.setting-card select:focus {
-  outline: none;
-  border-color: var(--brand-color);
-  box-shadow: 0 0 0 3px var(--accent-soft);
-}
-.image-upload-preview {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 120px;
-  border: 1px dashed var(--border-strong);
-  border-radius: 10px;
-  background: var(--surface-alt);
-  margin-bottom: 10px;
-  overflow: hidden;
-}
-.image-upload-preview img { max-height: 100%; max-width: 100%; border-radius: 8px; }
-.image-upload-preview .placeholder-icon { font-size: 2.2rem; color: var(--text-faint); }
-.avatar-preview { height: 96px; width: 96px; border-radius: 50%; }
-.avatar-preview img { border-radius: 50%; }
-.color-row { display: flex; align-items: center; gap: 10px; }
-.color-row .color-text { width: 110px; flex: none; font-family: monospace; }
-.color-preview {
-  width: 40px; height: 36px; border-radius: 8px;
-  border: 1px solid var(--border); flex: none;
-  background: var(--brand-color);
-}
-.file-input { margin-bottom: 10px; }
-.setting-card { padding: 24px; }
-.file-upload-wrapper { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.file-upload-wrapper input[type="file"] { display: none; }
-.file-upload-btn {
-  display: inline-block;
-  padding: 9px 18px;
-  background: var(--surface-muted);
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  color: var(--text);
-  cursor: pointer;
-  font-size: 0.92rem;
-  transition: background .2s, border-color .2s;
-}
-.file-upload-wrapper:hover .file-upload-btn { background: var(--surface-gray); border-color: var(--brand-color); }
-.file-name { color: var(--text-faint); font-size: 0.88rem; }
-.color-row { display: flex; align-items: center; gap: 12px; }
-.color-row input[type="color"] {
-  width: 48px; height: 48px; padding: 0; border: none; border-radius: 10px;
-  background: none; cursor: pointer; flex: none;
-}
-.color-row .color-text {
-  flex: 1; height: 48px; width: auto; box-sizing: border-box;
-  padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 10px;
-  background: var(--bg); color: var(--text);
-  font-family: monospace; font-size: 0.95rem;
-}
-.color-row .color-text:focus { outline: none; border-color: var(--brand-color); box-shadow: 0 0 0 3px var(--accent-soft); }
-.color-row .color-preview { width: 48px; height: 48px; border-radius: 10px; border: 1px solid var(--border); flex: none; }
-.setting-card .file-upload-wrapper { margin-bottom: 0; }
-.setting-card .upload-row { margin-bottom: 12px; }
-.settings-form { max-width: 880px; }
-.settings-block {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 28px 32px;
-  margin-bottom: 32px;
-}
-.block-head { border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 22px; }
-.block-head h3 { margin: 0 0 6px; font-size: 1.15rem; color: var(--text-strong); }
-.block-head p { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
-.form-control {
-  width: 100%; height: 40px; padding: 0 12px; box-sizing: border-box;
-  border: 1px solid var(--border-strong); border-radius: 6px;
-  background: var(--bg); color: var(--text); font: inherit;
-}
-textarea.form-control { height: auto; padding: 10px 12px; line-height: 1.5; resize: vertical; }
-.form-control:focus { outline: none; border-color: var(--brand-color); box-shadow: 0 0 0 3px var(--accent-soft); }
-.modern-upload {
-  display: flex; align-items: center; gap: 16px;
-  border: 1px dashed var(--border-strong); border-radius: 10px;
-  padding: 12px 16px; background: var(--surface-alt);
-}
-.modern-upload .preview {
-  width: 56px; height: 56px; flex: none; border-radius: 8px; overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--card-bg); border: 1px solid var(--border);
-}
-.modern-upload .preview img { max-width: 100%; max-height: 100%; display: block; }
-.modern-upload .preview i { font-size: 1.35rem; color: var(--text-faint); }
-.modern-upload .preview--round, .modern-upload .preview--round img { border-radius: 50%; }
-.modern-upload .actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.modern-upload .file-name { color: var(--text-muted); font-size: 0.85rem; }
-.remove-toggle {
-  display: inline-flex; align-items: center; gap: 5px;
-  color: var(--text-muted); font-size: 0.85rem; cursor: pointer;
-}
-.input-group { display: flex; align-items: center; gap: 10px; }
-.color-preview-box {
-  width: 44px; height: 40px; flex: none; border-radius: 6px; overflow: hidden;
-  border: 1px solid var(--border); position: relative; cursor: pointer;
-  background: var(--brand-color);
-}
-.color-preview-box input[type="color"] {
-  opacity: 0; width: 100%; height: 100%; border: none; padding: 0; cursor: pointer;
-}
-.input-group .color-text-input { flex: 1; }
-.settings-savebar {
-  position: sticky; bottom: 0; z-index: 20;
-  display: flex; align-items: center; justify-content: flex-end; gap: 16px;
-  padding: 14px 20px; margin: 0 0 24px;
-  background: var(--card-bg); border-top: 1px solid var(--border);
-  border-radius: 12px; box-shadow: var(--shadow);
-}
-.settings-savebar .savebar-hint { color: var(--text-muted); font-size: 0.88rem; }
-.settings-form {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  max-width: 1100px;
-  align-items: start;
-}
-.settings-form .settings-block { margin-bottom: 0; }
-.settings-form .settings-savebar { grid-column: 1 / -1; }
-@media (max-width: 768px) {
-  .settings-form { grid-template-columns: 1fr; gap: 16px; }
-  .settings-block { padding: 20px 18px; }
-  .settings-savebar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    text-align: center;
-  }
-  .modern-upload { flex-wrap: wrap; }
-  .modern-upload .actions { width: 100%; }
-}
-.social-editor { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
-.social-row { display: flex; gap: 10px; align-items: center; }
-.social-row .social-type {
-  flex: none; width: 130px; height: 40px; padding: 0 10px;
-  border: 1px solid var(--border-strong); border-radius: 6px;
-  background: var(--bg); color: var(--text); font: inherit;
-}
-.social-row .social-url { flex: 1; }
-.social-row .social-del { flex: none; }
-@media (max-width: 768px) {
-  .social-row { flex-wrap: wrap; }
-  .social-row .social-type { width: 100%; }
-  .social-row .social-url { width: 100%; }
-}
+
+/* ---------- 站点设置：区块卡片 ---------- */
 .settings-form { display: block; max-width: 1000px; }
 .setting-section {
-  display: flex;
-  gap: 32px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 32px;
-  margin-bottom: 32px;
+  padding: var(--admin-padding);
+  margin-bottom: 16px;
+  background: var(--admin-bg-card);
+  border-radius: var(--admin-radius-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
-.setting-section:last-of-type { border-bottom: none; }
+/* 含分栏结构（基础信息/外观/关于我/页脚）→ 左说明 + 右控件 */
+.setting-section:has(.setting-info) { display: flex; gap: 32px; }
 .setting-info { flex: 0 0 30%; max-width: 30%; }
-.setting-info h3 { margin: 0 0 6px; font-size: 1rem; color: var(--text-strong); }
-.setting-info p { margin: 0; color: var(--text-muted); font-size: 0.88rem; line-height: 1.55; }
+.setting-info h3 { margin: 0 0 6px; font-size: 1rem; color: var(--admin-text-primary); }
+.setting-info p { margin: 0; color: var(--admin-text-secondary); font-size: 0.88rem; line-height: 1.55; }
 .setting-controls { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
 .control-item { display: flex; flex-direction: column; gap: 6px; }
-.control-item > label { font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); }
+.control-item > label { font-size: 0.9rem; font-weight: 500; color: var(--admin-text-secondary); }
+.hint { color: var(--admin-text-tertiary); font-size: 0.82rem; margin: 4px 0 0; }
+
+/* ---------- 表单控件（HarmonyOS 输入框）---------- */
 .form-control {
   width: 100%; height: 40px; box-sizing: border-box;
-  border: 1px solid var(--border-strong); border-radius: 6px;
   padding: 0 12px; font-size: 14px; font-family: inherit;
-  background: var(--bg); color: var(--text);
-  transition: border-color .2s, box-shadow .2s;
+  border: 1px solid transparent; border-radius: var(--admin-radius-input);
+  background: var(--admin-bg-input); color: var(--admin-text-primary);
+  transition: background .2s, box-shadow .2s, border-color .2s;
 }
+.form-control::placeholder { color: var(--admin-text-tertiary); }
 textarea.form-control { height: auto; padding: 10px 12px; line-height: 1.5; resize: vertical; }
 .form-control:focus, textarea.form-control:focus {
-  border-color: var(--brand-color);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-color) 20%, transparent);
-  outline: none;
+  outline: none; background: var(--admin-bg-card);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-brand) 55%, transparent);
 }
+
+/* ---------- 图片上传（虚线框 + 预览）---------- */
 .custom-upload {
   display: flex; gap: 16px; align-items: center; padding: 16px;
-  border: 1px dashed var(--border-strong); border-radius: 8px;
-  background: var(--surface-alt);
+  border: 1px dashed var(--border-strong); border-radius: var(--admin-radius-card);
+  background: var(--admin-bg-input);
 }
 .custom-upload .preview-box {
-  width: 64px; height: 64px; flex: none; border-radius: 8px; overflow: hidden;
+  width: 64px; height: 64px; flex: none; border-radius: 12px; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
-  background: var(--card-bg); border: 1px solid var(--border);
+  background: var(--admin-bg-card); border: 1px solid var(--border);
 }
 .custom-upload .preview-box img { max-width: 100%; max-height: 100%; display: block; }
-.custom-upload .preview-box i { font-size: 1.5rem; color: var(--text-faint); }
+.custom-upload .preview-box i { font-size: 1.5rem; color: var(--admin-text-tertiary); }
 .custom-upload .preview-box--round, .custom-upload .preview-box--round img { border-radius: 50%; }
 .custom-upload .upload-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.file-name { color: var(--admin-text-tertiary); font-size: 0.85rem; }
+.remove-toggle { display: inline-flex; align-items: center; gap: 5px; color: var(--admin-text-secondary); font-size: 0.85rem; cursor: pointer; }
+
+/* ---------- 次要按钮 / 危险图标按钮 ---------- */
 .btn-outline {
-  display: inline-block; padding: 8px 16px; font: inherit; font-size: 0.9rem;
-  background: var(--card-bg); color: var(--text);
-  border: 1px solid var(--border-strong); border-radius: 6px; cursor: pointer;
-  transition: background .2s, border-color .2s;
+  padding: 8px 16px; font: inherit; font-size: 0.9rem;
+  background: var(--admin-bg-card); color: var(--admin-text-primary);
+  border: 1px solid var(--border-strong); border-radius: var(--admin-radius-btn);
+  cursor: pointer; transition: background .2s, border-color .2s, color .2s;
 }
-.btn-outline:hover { background: var(--surface-muted); border-color: var(--brand-color); }
+.btn-outline:hover { border-color: var(--admin-brand); color: var(--admin-brand); background: var(--admin-bg-input); }
 .btn-icon-danger {
-  flex: none; width: 36px; height: 36px;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: none; color: var(--text-muted); cursor: pointer;
-  border: 1px solid var(--border-strong); border-radius: 6px;
-  transition: background .2s, color .2s;
+  flex: none; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;
+  background: none; color: var(--admin-text-tertiary); cursor: pointer;
+  border: 1px solid var(--border-strong); border-radius: var(--admin-radius-btn);
+  transition: background .2s, color .2s, border-color .2s;
 }
-.btn-icon-danger:hover { background: var(--danger-soft); color: var(--hw-red-dark); }
+.btn-icon-danger:hover { background: var(--admin-danger); color: #fff; border-color: var(--admin-danger); }
+.btn-danger { background: var(--admin-danger); color: #fff; }
+.btn-danger:hover { background: #c4000f; }
+.btn-export-build { margin: 0; }
+.inline-form { display: inline-block; margin-right: 10px; }
+.empty-icon { font-size: 48px; color: var(--admin-text-tertiary); }
+
+/* ---------- 主题色：色板 + 文本输入 ---------- */
 .input-group {
   display: flex; align-items: stretch; overflow: hidden;
-  border: 1px solid var(--border-strong); border-radius: 6px; background: var(--bg);
+  border: 1px solid var(--border-strong); border-radius: var(--admin-radius-input);
+  background: var(--admin-bg-input);
 }
-.input-group .color-box { position: relative; width: 48px; flex: none; border-right: 1px solid var(--border-strong); }
+.input-group .color-box { position: relative; width: 48px; flex: none; border-right: 1px solid var(--border); }
 .input-group .color-box input[type="color"] {
   position: absolute; inset: 0; width: 100%; height: 100%;
   opacity: 0; cursor: pointer; border: none; padding: 0;
 }
-.input-group .form-control { border: none; border-radius: 0; box-shadow: none; flex: 1; }
-.input-group .form-control:focus { box-shadow: none; }
-.input-group:focus-within { border-color: var(--brand-color); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-color) 20%, transparent); }
+.input-group .form-control { border: none; border-radius: 0; box-shadow: none; flex: 1; background: transparent; }
+.input-group:focus-within { border-color: var(--admin-brand); box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-brand) 45%, transparent); }
+input[type="color"] {
+  width: 64px; height: 36px; padding: 2px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--admin-bg-card); cursor: pointer; vertical-align: middle;
+}
+
+/* ---------- 社交链接编辑器 ---------- */
 .social-editor { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
 .social-row {
   display: flex; gap: 10px; align-items: center; padding: 8px 10px;
-  border: 1px solid var(--border); border-radius: 8px; background: var(--card-bg);
-  transition: background .2s;
+  border: 1px solid var(--border); border-radius: var(--admin-radius-input);
+  background: var(--admin-bg-card); transition: background .2s, border-color .2s;
 }
-.social-row:hover { background: var(--surface-alt); }
-.social-row .social-icon { flex: none; width: 20px; text-align: center; color: var(--text-muted); }
+.social-row:hover { background: var(--admin-bg-input); border-color: var(--border-strong); }
+.social-row .social-icon { flex: none; width: 20px; text-align: center; color: var(--admin-text-secondary); }
 .social-row .social-type { flex: none; width: 132px; }
 .social-row .social-url { flex: 1; min-width: 0; }
+
+/* ---------- 吸底保存条（毛玻璃）---------- */
 .settings-savebar {
   position: sticky; bottom: 20px; z-index: 20;
   display: flex; justify-content: flex-end; align-items: center;
   padding: 12px 20px; margin: 12px 0 28px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: color-mix(in srgb, var(--card-bg) 90%, transparent);
+  background: color-mix(in srgb, var(--admin-bg-card) 88%, transparent);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--border) 55%, transparent);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
 }
+
+/* ---------- 移动端适配 ---------- */
 @media (max-width: 768px) {
-  .setting-section { flex-direction: column; gap: 14px; padding-bottom: 24px; margin-bottom: 24px; }
+  .setting-section { padding: 20px 18px; }
+  .setting-section:has(.setting-info) { flex-direction: column; gap: 14px; }
   .setting-info { flex: none; max-width: 100%; }
-  .settings-savebar { bottom: 12px; padding: 12px 16px; margin: 12px 0 20px; border-radius: 12px; }
+  .settings-savebar { bottom: 12px; padding: 12px 16px; border-radius: 12px; }
   .social-row { flex-wrap: wrap; }
-  .social-row .social-type { width: 100%; }
-  .social-row .social-url { width: 100%; }
+  .social-row .social-type, .social-row .social-url { width: 100%; }
 }
