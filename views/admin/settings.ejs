@@ -25,6 +25,7 @@
 
       <form method="POST" action="/admin/settings/banner" id="bannerForm">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="bannerVersion" value="<%= bannerRaw %>">
         <input type="hidden" name="bannerItems" id="bannerItemsInput">
 
         <div class="banner-list" id="bannerList">
@@ -71,6 +72,7 @@
 
       <form method="POST" action="/admin/settings" id="featuredForm">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="bannerVersion" value="<%= bannerRaw %>">
         <input type="hidden" name="featuredIds" id="featuredIdsInput">
         <input type="hidden" name="bannerItems" id="bannerItemsInput2" value="<%= JSON.stringify(bannerItems) %>">
 

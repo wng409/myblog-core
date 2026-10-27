@@ -987,6 +987,7 @@ app.post('/admin/posts/trash/clean-orphans', authAndCsrf, (req, res) => {
 app.get('/admin/settings', authOnly, csrfProtection, (req, res) => {
   getSetting((err, setting) => {
     if (err) return res.status(500).send(i18n.t(currentLang, 'admin.settings.err.dbError'));
+    const bannerRaw   = (setting && setting.banner_images) || '[]';
     const bannerItems = setting ? safeParseJson(setting.banner_images) : [];
     const featuredIds = setting ? safeParseJson(setting.featured_post_ids) : [];
     db.all('SELECT id, title FROM posts WHERE deleted_at IS NULL ORDER BY created_at DESC', (err, posts) => {
@@ -994,6 +995,8 @@ app.get('/admin/settings', authOnly, csrfProtection, (req, res) => {
       res.render('admin/settings', {
         layout: false, bannerItems, featuredIds, posts, siteLang: currentLang,
         settings: siteSettings,
+        // bannerRaw 供模板做"乐观锁"：提交时原样回传，用于判断页面是否已过期
+        bannerRaw,
         csrfToken: req.csrfToken()
       });
     });
@@ -1055,7 +1058,8 @@ const siteFormUpload = upload.fields([
   { name: 'about_avatar_file', maxCount: 1 }
 ]);
 
-app.post('/admin/settings/site', authOnly, siteFormUpload, csrfProtection, (req, res) => {
+// csrfProtection 必须放在 multer 之前：未通过 CSRF 校验的请求不应先落盘
+app.post('/admin/settings/site', authOnly, csrfProtection, siteFormUpload, (req, res) => {
   const sets = [], vals = [];
   // 大表单中的图片文件（若已选择则覆盖对应字段）
   const logoFile = req.files && req.files.site_logo_file && req.files.site_logo_file[0];
@@ -1102,8 +1106,9 @@ function handleSettingImage(field, column) {
   };
 }
 
-app.post('/admin/settings/upload-logo', authOnly, upload.single('logo'), csrfProtection, handleSettingImage('upload_logo', 'site_logo'));
-app.post('/admin/settings/upload-avatar', authOnly, upload.single('avatar'), csrfProtection, handleSettingImage('upload_avatar', 'about_avatar'));
+// 同上：csrfProtection 在 multer 之前
+app.post('/admin/settings/upload-logo', authOnly, csrfProtection, upload.single('logo'), handleSettingImage('upload_logo', 'site_logo'));
+app.post('/admin/settings/upload-avatar', authOnly, csrfProtection, upload.single('avatar'), handleSettingImage('upload_avatar', 'about_avatar'));
 
 // ============================================================
 // 静态站导出（一键生成 / 打包下载）
@@ -1142,29 +1147,61 @@ app.get('/admin/export-download', authOnly, (req, res) => {
 
 app.post('/admin/settings', authOnly, csrfProtection, (req, res) => {
   const { bannerItems, featuredIds } = req.body;
-  let bannerJson = '[]', featuredJson = '[]';
+
+  // 关键：只有"显式传了该字段"才更新对应列，未传的字段保持库中原值，
+  // 避免"只保存推荐"时把已有 Banner 清空。
+  const hasBanner   = typeof bannerItems !== 'undefined' && bannerItems !== null && bannerItems !== '';
+  const hasFeatured = typeof featuredIds !== 'undefined' && featuredIds !== null && featuredIds !== '';
+
+  let bannerJson = null, featuredJson = null;
   try {
-    if (bannerItems) {
+    if (hasBanner) {
       const parsed = typeof bannerItems === 'string' ? JSON.parse(bannerItems) : bannerItems;
-      if (Array.isArray(parsed)) {
-        const safe = parsed.map(item => Object.assign({}, item, { image: sanitizeUrl(item && item.image) }));
-        bannerJson = JSON.stringify(safe);
-      }
+      if (!Array.isArray(parsed)) return res.status(400).send(i18n.t(currentLang, 'admin.settings.err.invalidData'));
+      bannerJson = JSON.stringify(
+        parsed.map(item => Object.assign({}, item, { image: sanitizeUrl(item && item.image) }))
+      );
     }
-    if (featuredIds) {
+    if (hasFeatured) {
       const parsed = typeof featuredIds === 'string' ? JSON.parse(featuredIds) : featuredIds;
-      if (Array.isArray(parsed)) featuredJson = JSON.stringify(parsed);
+      if (!Array.isArray(parsed)) return res.status(400).send(i18n.t(currentLang, 'admin.settings.err.invalidData'));
+      featuredJson = JSON.stringify(parsed);
     }
   } catch(e) { return res.status(400).send(i18n.t(currentLang, 'admin.settings.err.invalidData')); }
-  db.run(
-    `UPDATE settings SET banner_images=?, featured_post_ids=? WHERE id=1`,
-    [bannerJson, featuredJson],
-    function(err) {
-      if (err) return res.status(500).send(i18n.t(currentLang, 'admin.settings.err.saveFailedPrefix') + err.message);
+
+  function doUpdate() {
+    const sets = [], vals = [];
+    if (bannerJson   !== null) { sets.push('banner_images = ?');     vals.push(bannerJson); }
+    if (featuredJson !== null) { sets.push('featured_post_ids = ?'); vals.push(featuredJson); }
+
+    if (!sets.length) {
+      return res.redirect('/admin/settings?msg=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.msg.saved')));
+    }
+    db.run(`UPDATE settings SET ${sets.join(', ')} WHERE id = 1`, vals, function (err) {
+      if (err) {
+        console.error(err);
+        return res.status(500).send(i18n.t(currentLang, 'error.500.message'));
+      }
       logAction(req, 'update_settings', 'homepage');
       res.redirect('/admin/settings?msg=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.msg.saved')));
+    });
+  }
+
+  // 改动 Banner 前做"乐观锁"：页面回传的 bannerVersion 必须与库中当前值一致。
+  // 不一致说明页面是早先打开、未刷新的旧副本（可能带着陈旧甚至空的 banner），一律拒绝。
+  if (bannerJson === null) return doUpdate();
+
+  db.get('SELECT banner_images FROM settings WHERE id = 1', (err, row) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send(i18n.t(currentLang, 'error.500.message'));
     }
-  );
+    const current = (row && row.banner_images) || '[]';
+    if (String(req.body.bannerVersion || '') !== current) {
+      return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.err.staleBanner')));
+    }
+    doUpdate();
+  });
 });
 
 app.post('/admin/settings/banner', authOnly, csrfProtection, (req, res) => {
@@ -1172,20 +1209,35 @@ app.post('/admin/settings/banner', authOnly, csrfProtection, (req, res) => {
   try {
     parsed = typeof req.body.bannerItems === 'string'
       ? JSON.parse(req.body.bannerItems) : req.body.bannerItems;
-  } catch (e) { return res.status(400).json({ success: false, error: i18n.t(currentLang, 'admin.settings.err.invalidData') }); }
-  if (!Array.isArray(parsed)) return res.status(400).json({ success: false, error: i18n.t(currentLang, 'admin.settings.err.invalidData') });
+  } catch (e) { return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.err.invalidData'))); }
+  if (!Array.isArray(parsed)) return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.err.invalidData')));
   const cleaned = parsed
     .filter(item => item.postId || item.title || item.image)
     .map(item => Object.assign({}, item, { image: sanitizeUrl(item && item.image) }));
-  db.run(
-    `UPDATE settings SET banner_images = ? WHERE id = 1`,
-    [JSON.stringify(cleaned)],
-    function(err) {
-      if (err) { console.error(err); return res.status(500).json({ success: false, error: err.message }); }
-      logAction(req, 'update_banner', 'homepage');
-      res.redirect('/admin/settings?msg=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.msg.bannerSaved')));
+
+  // 同样的"乐观锁"：拒绝早先打开、未刷新的旧页面提交的 Banner，避免覆盖最新数据
+  db.get('SELECT banner_images FROM settings WHERE id = 1', (err, row) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send(i18n.t(currentLang, 'error.500.message'));
     }
-  );
+    const current = (row && row.banner_images) || '[]';
+    if (String(req.body.bannerVersion || '') !== current) {
+      return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.err.staleBanner')));
+    }
+    db.run(
+      `UPDATE settings SET banner_images = ? WHERE id = 1`,
+      [JSON.stringify(cleaned)],
+      function(err) {
+        if (err) {
+          console.error(err);
+          return res.status(500).send(i18n.t(currentLang, 'error.500.message'));
+        }
+        logAction(req, 'update_banner', 'homepage');
+        res.redirect('/admin/settings?msg=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.msg.bannerSaved')));
+      }
+    );
+  });
 });
 
 // ============================================================

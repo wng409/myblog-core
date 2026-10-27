@@ -264,7 +264,13 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('featuredIdsInput').value = JSON.stringify(selected);
       const bannerItemsInput2 = document.getElementById('bannerItemsInput2');
       if (bannerItemsInput2) {
-        bannerItemsInput2.value = JSON.stringify(collectBanners());
+        if (bannerRows().length > 0) {
+          bannerItemsInput2.value = JSON.stringify(collectBanners());
+        } else {
+          // 页面上没有任何 Banner 行（旧标签页 / 列表未加载）时不提交该字段，
+          // 让后端保持库中原值，避免"保存推荐文章"把已有 Banner 清空。
+          bannerItemsInput2.disabled = true;
+        }
       }
     });
   }
