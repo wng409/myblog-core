@@ -582,28 +582,7 @@
 }
 .settings-section h2 { margin-bottom: 20px; }
 
-.banner-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-.banner-table th,
-.banner-table td {
-  padding: 8px;
-  border: 1px solid var(--hw-border);
-  text-align: left;
-  vertical-align: middle;
-}
-.banner-table input,
-.banner-table select {
-  width: 100%;
-  padding: 6px;
-  border: 1px solid var(--hw-border);
-  border-radius: 4px;
-  box-sizing: border-box;
-  background: var(--card-bg);
-  color: var(--text);
-}
+/* .banner-table 已移除：Banner 管理改为卡片式（.banner-list / .banner-row） */
 
 .img-input-wrap {
   display: flex;
@@ -679,8 +658,7 @@
     font-weight: 600;
   }
 
-  .admin-table,
-  .banner-table {
+  .admin-table {
     display: block;
     overflow-x: auto;
     white-space: nowrap;
@@ -1261,6 +1239,7 @@ html[data-theme] .editor-prompt input {
 .banner-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .banner-summary { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; min-width: 0; cursor: pointer; }
 .banner-summary-title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--admin-text-primary); }
+.banner-actions { display: flex; gap: 6px; flex: 0 0 auto; align-items: center; }
 
 /* ---------- 推荐候选（胶囊选择） ---------- */
 .featured-candidates { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; max-height: 220px; overflow-y: auto; }
@@ -1345,6 +1324,70 @@ html[data-theme] .editor-prompt input {
 
   /* Banner 行：仅保留缩略图 + 标题摘要，字段移入底部抽屉 */
   .banner-list .banner-fields { display: none; }
+  .banner-actions { width: 100%; justify-content: flex-end; }
+
+  /* 抽屉内的 Banner 编辑区：纵向排布（图片预览 → 关联设置 → 标题 → 图片地址），
+     避免三个控件挤在同一行 */
+  #bannerSheetBody .banner-fields {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 2px 0 6px;
+  }
+  #bannerSheetBody .banner-fields .banner-post,
+  #bannerSheetBody .banner-fields > input[name="title"],
+  #bannerSheetBody .banner-fields .img-input-wrap {
+    flex: 0 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  #bannerSheetBody .banner-fields .banner-post,
+  #bannerSheetBody .banner-fields > input[name="title"] {
+    min-height: 42px;
+  }
+
+  /* 抽屉不在 .admin-container 内，需单独补齐控件外观（圆角 8px，与后台输入框一致） */
+  #bannerSheetBody .banner-fields .banner-post,
+  #bannerSheetBody .banner-fields > input[name="title"],
+  #bannerSheetBody .banner-fields .img-input-wrap > input[name="image"] {
+    background: var(--admin-bg-input);
+    color: var(--admin-text-primary);
+    border: 1px solid transparent;
+    border-radius: var(--admin-radius-input);
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    outline: none;
+    max-width: 100%;
+  }
+  #bannerSheetBody .banner-fields .banner-post:focus,
+  #bannerSheetBody .banner-fields > input[name="title"]:focus,
+  #bannerSheetBody .banner-fields .img-input-wrap > input[name="image"]:focus {
+    border-color: var(--admin-brand);
+    background: var(--admin-bg-card);
+  }
+  #bannerSheetBody .banner-fields .btn-upload {
+    border-radius: var(--admin-radius-btn);
+  }
+
+  /* 抽屉内的图片预览（16:9 大图，无图时显示占位文案） */
+  #bannerSheetBody .banner-preview {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 10px;
+    border: 1px dashed var(--border);
+    background-color: var(--admin-bg-input);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--admin-text-tertiary);
+  }
 
   /* PC 专用元素在移动端隐藏 */
   .pc-only { display: none !important; }

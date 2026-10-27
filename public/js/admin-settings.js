@@ -1,37 +1,112 @@
 // 从 body 上读 CSRF token
 const CSRF_TOKEN = document.body.dataset.csrf || '';
+const BANNER_UNTITLED = document.body.dataset.bannerUntitled || '';
+const PREVIEW_EMPTY = document.body.dataset.bannerPreviewEmpty || '';
 
 // ==================== Banner 管理 ====================
+const sheet = document.getElementById('bannerSheet');
+const sheetBody = document.getElementById('bannerSheetBody');
+const sheetMask = document.getElementById('bannerSheetMask');
+let sheetHost = null;
+
+function bannerRows() {
+  const list = document.getElementById('bannerList');
+  return list ? Array.prototype.slice.call(list.querySelectorAll('.banner-row')) : [];
+}
+
+// 空状态提示：没有行时显示，避免列表区看起来"加载不出来"
+function updateEmptyTip() {
+  const tip = document.getElementById('bannerEmptyTip');
+  if (!tip) return;
+  tip.style.display = bannerRows().length === 0 ? '' : 'none';
+}
+
+// 抽屉内的大图预览
+function renderPreview(fields, preview) {
+  if (!preview) return;
+  const imgIn = fields.querySelector('input[name="image"]');
+  const url = imgIn ? imgIn.value.trim() : '';
+  if (url) {
+    preview.style.backgroundImage = 'url("' + url.replace(/"/g, '%22') + '")';
+    preview.textContent = '';
+  } else {
+    preview.style.backgroundImage = '';
+    preview.textContent = PREVIEW_EMPTY;
+  }
+}
+
 function collectBanners() {
-  const rows = document.querySelectorAll('#bannerList tr');
-  const items = [];
-  rows.forEach(row => {
-    const postId = row.querySelector('.banner-post').value;
-    const title = row.querySelector('input[name="title"]').value.trim();
-    const image = row.querySelector('input[name="image"]').value.trim();
-    items.push({ postId: postId || null, title, image });
+  return bannerRows().map(function (row) {
+    const postSel = row.querySelector('.banner-post');
+    const titleIn = row.querySelector('input[name="title"]');
+    const imgIn = row.querySelector('input[name="image"]');
+    return {
+      postId: (postSel && postSel.value) || null,
+      title: titleIn ? titleIn.value.trim() : '',
+      image: imgIn ? imgIn.value.trim() : ''
+    };
   });
-  return items;
+}
+
+// 序号 / 摘要 / 缩略图 / 按钮绑定
+function updateIndices() {
+  bannerRows().forEach(function (row, i) {
+    row.dataset.index = String(i);
+
+    const titleInput = row.querySelector('input[name="title"]');
+    const summaryTitle = row.querySelector('.banner-summary-title');
+    const imgInput = row.querySelector('input[name="image"]');
+    const thumb = row.querySelector('.banner-thumb');
+
+    if (summaryTitle) {
+      summaryTitle.textContent = (titleInput && titleInput.value.trim()) || BANNER_UNTITLED;
+    }
+    if (thumb) {
+      const url = imgInput ? imgInput.value.trim() : '';
+      let img = thumb.querySelector('img');
+      if (url) {
+        if (!img) { img = document.createElement('img'); img.alt = ''; thumb.appendChild(img); }
+        img.src = url;
+      } else if (img) {
+        img.remove();
+      }
+    }
+
+    row.querySelectorAll('[data-action]').forEach(function (btn) {
+      const action = btn.dataset.action;
+      if (action === 'up') btn.onclick = function () { moveBannerUp(i); };
+      else if (action === 'down') btn.onclick = function () { moveBannerDown(i); };
+      else if (action === 'delete') btn.onclick = function () { removeBanner(i); };
+    });
+  });
+
+  // 抽屉打开时同步刷新大图预览（手动输入 / 上传成功后都会走到这里）
+  if (sheet && sheet.classList.contains('open') && sheetBody) {
+    const openFields = sheetBody.querySelector('.banner-fields');
+    const preview = sheetBody.querySelector('.banner-preview');
+    if (openFields && preview) renderPreview(openFields, preview);
+  }
+
+  updateEmptyTip();
 }
 
 function addBanner() {
-  const tbody = document.getElementById('bannerList');
+  const list = document.getElementById('bannerList');
   const tpl = document.getElementById('bannerRowTemplate');
-  if (!tbody || !tpl) return;
-  const clone = tpl.content.cloneNode(true);
-  tbody.appendChild(clone);
+  if (!list || !tpl) return;
+  list.appendChild(tpl.content.cloneNode(true));
   updateIndices();
 }
 
 function removeBanner(index) {
-  const rows = document.querySelectorAll('#bannerList tr');
+  const rows = bannerRows();
   if (rows[index]) rows[index].remove();
   updateIndices();
 }
 
 function moveBannerUp(index) {
-  const rows = document.querySelectorAll('#bannerList tr');
-  if (index > 0) {
+  const rows = bannerRows();
+  if (index > 0 && rows[index]) {
     const parent = rows[index].parentNode;
     parent.insertBefore(rows[index], rows[index - 1]);
     updateIndices();
@@ -39,26 +114,57 @@ function moveBannerUp(index) {
 }
 
 function moveBannerDown(index) {
-  const rows = document.querySelectorAll('#bannerList tr');
-  if (index < rows.length - 1) {
+  const rows = bannerRows();
+  if (index < rows.length - 1 && rows[index]) {
     const parent = rows[index].parentNode;
     parent.insertBefore(rows[index + 1], rows[index]);
     updateIndices();
   }
 }
 
-function updateIndices() {
-  const rows = document.querySelectorAll('#bannerList tr');
-  rows.forEach((row, i) => {
-    row.dataset.index = i;
-    const btns = row.querySelectorAll('button');
-    btns.forEach(btn => {
-      const action = btn.dataset.action;
-      if (action === 'up') btn.onclick = function () { moveBannerUp(i); };
-      else if (action === 'down') btn.onclick = function () { moveBannerDown(i); };
-      else if (action === 'delete') btn.onclick = function () { removeBanner(i); };
-    });
-  });
+// ==================== 移动端：编辑抽屉 ====================
+function openSheet(row) {
+  if (!sheet || !sheetBody) return;
+  const fields = row.querySelector('.banner-fields');
+  if (!fields) return;
+  sheetHost = row;
+
+  // 预览块固定放在字段之前
+  let preview = sheetBody.querySelector('.banner-preview');
+  if (!preview) {
+    preview = document.createElement('div');
+    preview.className = 'banner-preview';
+    sheetBody.appendChild(preview);
+  }
+  renderPreview(fields, preview);
+
+  // 地址变化实时跟随
+  const imgIn = fields.querySelector('input[name="image"]');
+  if (imgIn) imgIn.oninput = function () { renderPreview(fields, preview); };
+
+  sheetBody.appendChild(fields);   // DOM 移动，字段仍属于原 form
+  sheet.classList.add('open');
+  if (sheetMask) sheetMask.classList.add('show');
+}
+
+function closeSheet() {
+  if (sheetHost) {
+    const fields = sheetBody.querySelector('.banner-fields');
+    if (fields) {
+      const imgIn = fields.querySelector('input[name="image"]');
+      if (imgIn) imgIn.oninput = null;
+      // 移回原行：放在操作按钮之前
+      const actions = sheetHost.querySelector('.banner-actions');
+      if (actions) sheetHost.insertBefore(fields, actions);
+      else sheetHost.appendChild(fields);
+    }
+    const preview = sheetBody.querySelector('.banner-preview');
+    if (preview) preview.remove();
+    sheetHost = null;
+  }
+  if (sheet) sheet.classList.remove('open');
+  if (sheetMask) sheetMask.classList.remove('show');
+  updateIndices();
 }
 
 // ==================== Banner 图片上传 ====================
@@ -104,6 +210,7 @@ document.addEventListener('click', function (e) {
           input.style.borderColor = '';
           input.style.boxShadow = '';
         }, 1500);
+        updateIndices();   // 同步缩略图 + 抽屉内大图预览
       } else {
         throw new Error(data.error || document.body.dataset.uploadInvalid || 'Invalid response data');
       }
@@ -127,11 +234,25 @@ document.addEventListener('DOMContentLoaded', function () {
   const addBtn = document.getElementById('addBannerBtn');
   if (addBtn) addBtn.addEventListener('click', addBanner);
 
+  // 移动端点击摘要 → 打开抽屉（事件委托，动态新增行同样生效）
+  const listEl = document.getElementById('bannerList');
+  if (listEl) {
+    listEl.addEventListener('click', function (e) {
+      const summary = e.target.closest('.banner-summary');
+      if (!summary) return;
+      const row = summary.closest('.banner-row');
+      if (row) openSheet(row);
+    });
+  }
+  if (sheetMask) sheetMask.addEventListener('click', closeSheet);
+  const sheetClose = document.getElementById('bannerSheetClose');
+  if (sheetClose) sheetClose.addEventListener('click', closeSheet);
+
   const bannerForm = document.getElementById('bannerForm');
   if (bannerForm) {
     bannerForm.addEventListener('submit', function () {
-      const items = collectBanners();
-      document.getElementById('bannerItemsInput').value = JSON.stringify(items);
+      closeSheet();   // 若抽屉开着，先把字段移回，保证能正确收集
+      document.getElementById('bannerItemsInput').value = JSON.stringify(collectBanners());
     });
   }
 

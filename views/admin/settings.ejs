@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/css/admin.css">
   <%- include('../partials/brand-color') %>
 </head>
-<body data-csrf="<%= csrfToken %>" data-upload-failed="<%= t('admin.banner.uploadFailed') %>" data-upload-invalid="<%= t('admin.banner.uploadInvalid') %>" data-lang="<%= lang %>">
+<body data-csrf="<%= csrfToken %>" data-upload-failed="<%= t('admin.banner.uploadFailed') %>" data-upload-invalid="<%= t('admin.banner.uploadInvalid') %>" data-lang="<%= lang %>" data-banner-untitled="<%= t('admin.banner.untitled') %>" data-banner-preview-empty="<%= t('admin.banner.previewEmpty') %>">
   <div class="admin-container">
     <div class="admin-header">
       <h1><%= t('admin.settings.title') %></h1>
@@ -27,44 +27,38 @@
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <input type="hidden" name="bannerItems" id="bannerItemsInput">
 
-        <table class="banner-table" id="bannerTable">
-          <thead>
-            <tr>
-              <th style="width:26%;"><%= t('admin.banner.colPost') %></th>
-              <th style="width:22%;"><%= t('admin.banner.colTitle') %></th>
-              <th style="width:32%;"><%= t('admin.banner.colImage') %></th>
-              <th style="width:20%;"><%= t('admin.banner.colActions') %></th>
-            </tr>
-          </thead>
-          <tbody id="bannerList">
-            <% bannerItems.forEach((item, index) => { %>
-              <tr data-index="<%= index %>">
-                <td>
-                  <select name="postId" class="banner-post">
-                    <option value=""><%= t('admin.banner.none') %></option>
-                    <% posts.forEach(post => { %>
-                      <option value="<%= post.id %>" <%= item.postId == post.id ? 'selected' : '' %>>
-                        <%= post.title %>
-                      </option>
-                    <% }) %>
-                  </select>
-                </td>
-                <td><input type="text" name="title" value="<%= item.title || '' %>" placeholder="<%= t('admin.banner.titlePh') %>"></td>
-                <td>
-                  <div class="img-input-wrap">
-                    <input type="text" name="image" value="<%= item.image || '' %>" placeholder="<%= t('admin.banner.imagePh') %>">
-                    <button type="button" class="btn-upload" data-loading="<%= t('admin.banner.uploading') %>"><%= t('admin.banner.upload') %></button>
-                  </div>
-                </td>
-                <td>
-                  <button type="button" class="btn-sm btn-secondary" data-action="up"><%= t('admin.banner.up') %></button>
-                  <button type="button" class="btn-sm btn-secondary" data-action="down"><%= t('admin.banner.down') %></button>
-                  <button type="button" class="btn-sm btn-danger" data-action="delete"><%= t('admin.banner.delete') %></button>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
+        <div class="banner-list" id="bannerList">
+          <p class="empty-tip" id="bannerEmptyTip"<% if (bannerItems && bannerItems.length > 0) { %> style="display:none"<% } %>><%= t('admin.banner.empty') %></p>
+          <% bannerItems.forEach((item, index) => { %>
+            <div class="banner-row" data-index="<%= index %>">
+              <div class="banner-summary mobile-only">
+                <span class="banner-thumb"><% if (item.image) { %><img src="<%= item.image %>" alt=""><% } %></span>
+                <span class="banner-summary-title"><%= item.title || t('admin.banner.untitled') %></span>
+                <i class="fas fa-chevron-right"></i>
+              </div>
+              <div class="banner-fields">
+                <select name="postId" class="banner-post">
+                  <option value=""><%= t('admin.banner.none') %></option>
+                  <% posts.forEach(post => { %>
+                    <option value="<%= post.id %>" <%= item.postId == post.id ? 'selected' : '' %>>
+                      <%= post.title %>
+                    </option>
+                  <% }) %>
+                </select>
+                <input type="text" name="title" value="<%= item.title || '' %>" placeholder="<%= t('admin.banner.titlePh') %>">
+                <div class="img-input-wrap">
+                  <input type="text" name="image" value="<%= item.image || '' %>" placeholder="<%= t('admin.banner.imagePh') %>">
+                  <button type="button" class="btn-upload" data-loading="<%= t('admin.banner.uploading') %>"><%= t('admin.banner.upload') %></button>
+                </div>
+              </div>
+              <div class="banner-actions">
+                <button type="button" class="btn-sm btn-secondary" data-action="up"><%= t('admin.banner.up') %></button>
+                <button type="button" class="btn-sm btn-secondary" data-action="down"><%= t('admin.banner.down') %></button>
+                <button type="button" class="btn-sm btn-danger" data-action="delete"><%= t('admin.banner.delete') %></button>
+              </div>
+            </div>
+          <% }) %>
+        </div>
         <button type="button" id="addBannerBtn" class="btn" style="margin-top:10px;"><%= t('admin.banner.add') %></button>
         <button type="submit" class="btn" style="margin-top:10px; margin-left:10px;"><%= t('admin.banner.save') %></button>
       </form>
@@ -95,30 +89,44 @@
     </div>
   </div>
 
+  <!-- 移动端：Banner 编辑抽屉 -->
+  <div class="sheet-mask" id="bannerSheetMask"></div>
+  <div class="sheet" id="bannerSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h3><%= t('admin.banner.editTitle') %></h3>
+      <button type="button" class="sheet-close" id="bannerSheetClose" aria-label="<%= t('admin.banner.close') %>"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="sheet-body" id="bannerSheetBody"></div>
+  </div>
+
   <!-- 新增行模板 -->
   <template id="bannerRowTemplate">
-    <tr>
-      <td>
+    <div class="banner-row">
+      <div class="banner-summary mobile-only">
+        <span class="banner-thumb"></span>
+        <span class="banner-summary-title"><%= t('admin.banner.untitled') %></span>
+        <i class="fas fa-chevron-right"></i>
+      </div>
+      <div class="banner-fields">
         <select name="postId" class="banner-post">
           <option value=""><%= t('admin.banner.none') %></option>
           <% posts.forEach(post => { %>
             <option value="<%= post.id %>"><%= post.title %></option>
           <% }) %>
         </select>
-      </td>
-      <td><input type="text" name="title" placeholder="<%= t('admin.banner.titlePh') %>"></td>
-      <td>
+        <input type="text" name="title" placeholder="<%= t('admin.banner.titlePh') %>">
         <div class="img-input-wrap">
           <input type="text" name="image" placeholder="<%= t('admin.banner.imagePh') %>">
           <button type="button" class="btn-upload" data-loading="<%= t('admin.banner.uploading') %>"><%= t('admin.banner.upload') %></button>
         </div>
-      </td>
-      <td>
+      </div>
+      <div class="banner-actions">
         <button type="button" class="btn-sm btn-secondary" data-action="up"><%= t('admin.banner.up') %></button>
         <button type="button" class="btn-sm btn-secondary" data-action="down"><%= t('admin.banner.down') %></button>
         <button type="button" class="btn-sm btn-danger" data-action="delete"><%= t('admin.banner.delete') %></button>
-      </td>
-    </tr>
+      </div>
+    </div>
   </template>
 
   <script src="/js/admin-settings.js"></script>
