@@ -69,7 +69,8 @@
 - **严格内容安全策略（CSP）**：全站同源脚本（`script-src 'self'`），禁止内联 JS；唯一的防闪烁内联脚本以 **SHA-256 哈希指纹放行**，从根源收敛 XSS 面。
 - **应用层防护**：`helmet` + `csurf`（CSRF Token）+ `express-rate-limit`（登录限流）+ `DOMPurify` 输入清洗。
 - **密码安全**：`scrypt` 加盐哈希、恒定时间比较。
-- **上传安全**：`multer` 白名单校验 MIME 与扩展名，限制大小与字段数量。
+- **上传安全**：`multer` 白名单校验 MIME 与扩展名，限制大小与字段数量；所有上传路由的 **CSRF 校验前置于 `multer`**，未携带合法 token 的请求在落盘之前即被拒绝。
+- **设置并发保护**：「首页设置」表单会携带 Banner 配置的版本快照（`bannerVersion`），与库中当前值不一致时拒绝保存并提示「页面数据已过期」，避免早先打开、未刷新的旧页面覆盖甚至清空最新 Banner。
 - **反向代理友好**：已开启 `trust proxy`，正确识别 `X-Forwarded-For`。
 
 ## core 功能
@@ -83,10 +84,10 @@
 **后台（单管理员账号）**
 - 文章管理：新建 / 编辑 / 删除，支持本地上传或外链封面
 - 回收站：软删除、恢复、彻底删除、清空、孤儿图片清理
-- 首页管理：Banner 轮播与推荐文章配置
+- 首页管理：Banner 轮播（卡片式列表；移动端点击条目展开底部抽屉，含图片实时预览与纵向排布的编辑项）与推荐文章配置
 - 操作日志：登录、文章、设置等操作留痕，支持筛选与分页
 - 个人资料：修改用户名（含内置 `admin` 账号）与密码
-- 多语言切换：在「首页设置」中切换前台语言（简体中文 / English）
+- 多语言切换：在「首页设置」中切换前台语言（简体中文 / English / 文言文 / 火星文）
 
 ## 技术栈
 
@@ -163,7 +164,113 @@ npm start
 
 ## 部署
 
-生产环境建议用 systemd 常驻，并在前面加 Nginx 反向代理。反向代理时请确保透传 `X-Forwarded-For`，应用已开启 `trust proxy`。
+一套最小可用的生产部署：**systemd** 常驻进程 + **Nginx** 终止 TLS 并反向代理。路径与域名按你自己的环境调整。
+
+**1. 放置代码并安装依赖**
+
+```bash
+sudo mkdir -p /var/www/myblog-core && sudo chown "$USER":"$USER" /var/www/myblog-core
+cd /var/www/myblog-core
+# 把仓库放到这里（git clone / rsync / scp）
+npm ci --omit=dev
+```
+
+**2. 配置 `.env`**
+
+```bash
+cp .env.example .env
+```
+
+```ini
+HOST=127.0.0.1            # 只监听本机回环，对外由 Nginx 承接
+PORT=3000
+NODE_ENV=production       # Cookie 会带 Secure 标志，因此必须走 HTTPS
+SITE_NAME=My Blog
+SESSION_SECRET=<openssl rand -base64 32 生成>
+ADMIN_USERNAME=admin      # 仅首次启动生效
+ADMIN_PASSWORD=<一个强密码>
+```
+
+> `NODE_ENV=production` 会让 Cookie 带上 `Secure`，站点必须通过 HTTPS 访问；若只想用 http 试跑，请用 `development`。
+
+**3. 创建可写目录**
+
+应用运行时会创建并写入 `db/`（含 WAL 文件）、`sessions/`、`public/uploads/`。
+
+```bash
+mkdir -p db sessions public/uploads
+chmod -R u+rwX db sessions public/uploads
+```
+
+**4. systemd 服务**
+
+`/etc/systemd/system/myblog-core.service`：
+
+```ini
+[Unit]
+Description=myblog-core
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/myblog-core
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node app.js
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now myblog-core
+sudo systemctl status myblog-core --no-pager
+```
+
+> `User=www-data` 必须对 `db/`、`sessions/`、`public/uploads/` 有写权限（例如对这三个目录执行 `sudo chown -R www-data:www-data`）。
+
+**5. Nginx 反向代理**
+
+```nginx
+server {
+    listen 80;
+    server_name blog.example.com;
+
+    client_max_body_size 8m;   # 图片上传（multer 自身限制 5 MB）
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+准备启用 HTTPS 时，加上 `listen 443 ssl;` 与证书路径（如 `sudo certbot --nginx`）—— 若用 `NODE_ENV=production`，这一步是必需的。
+
+**6. 验证**
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3000/admin/login   # 期望 200
+sudo journalctl -u myblog-core -n 30 --no-pager
+```
+
+**常见坑**
+
+- **本机登录正常，经 Nginx 后登录不上** —— Cookie 带 `Secure` 而站点走的是 http。改用 HTTPS，或临时切到 `NODE_ENV=development`。
+- **Nginx 返回 502** —— 服务没起来，或 `.env` 里的 `HOST`/`PORT` 与 `proxy_pass` 不一致。
+- **上传报 500** —— `public/uploads/` 对服务运行用户不可写。
+- **日志里的访客 IP 不对** —— 没有透传 `X-Forwarded-For`；应用已开启 `trust proxy`，依赖这个头。
 
 ## 数据库备份
 

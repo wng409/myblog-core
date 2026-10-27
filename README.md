@@ -69,7 +69,8 @@ In an era where deploying a blog often requires going to the cloud, buying DDoS 
 - **Strict Content Security Policy (CSP)**: Same-origin scripts (`script-src 'self'`), blocking inline JS. The only anti-FOUC inline script is whitelisted using a **SHA-256 hash fingerprint**, minimizing XSS surface.
 - **Application Layer Protection**: `helmet` + `csurf` (CSRF Token) + `express-rate-limit` (Login rate limiting) + `DOMPurify` (Input sanitization).
 - **Password Security**: `scrypt` salted hash, constant-time comparison.
-- **Upload Security**: `multer` whitelist validation for MIME and extensions, limits on size and field count.
+- **Upload Security**: `multer` whitelist validation for MIME and extensions, limits on size and field count. **CSRF validation runs before `multer`** on every upload route, so a request without a valid token is rejected before anything touches the disk.
+- **Settings Concurrency Guard**: the Homepage settings form carries a snapshot (`bannerVersion`) of the stored banner configuration. If it no longer matches, the save is rejected with a "page is out of date" message instead of overwriting newer data — a stale browser tab can no longer wipe or clobber the banner list.
 - **Reverse Proxy Friendly**: `trust proxy` enabled to correctly identify `X-Forwarded-For`.
 
 ## Core Features
@@ -83,10 +84,10 @@ In an era where deploying a blog often requires going to the cloud, buying DDoS 
 **Admin Panel (Single Administrator)**
 - Article management: Create / Edit / Delete, supports local upload or external image URL
 - Recycle Bin: Soft delete, restore, permanent delete, empty, orphan image cleanup
-- Homepage settings: Banner carousel and featured posts configuration
+- Homepage settings: Banner carousel (card list on desktop; on mobile, tap an item to open a bottom sheet with a live image preview and vertically stacked fields) and featured posts configuration
 - Operation logs: Login, article, settings operations traced, supports filtering and pagination
 - Profile: Modify username (including the built-in `admin` account) and password
-- Internationalization: Switch the site language (English / Simplified Chinese) in Homepage settings
+- Internationalization: Switch the site language (Simplified Chinese / English / Classical Chinese / Martian) in Homepage settings
 
 ## Tech Stack
 
@@ -163,7 +164,113 @@ On first launch, `db/`, `sessions/`, and `public/uploads/` directories are auto-
 
 ## Deployment
 
-For production, it is recommended to use systemd for daemonization and Nginx as a reverse proxy. Ensure `X-Forwarded-For` is passed through when proxying; the app has `trust proxy` enabled.
+A minimal production setup: **systemd** for process supervision + **Nginx** as a TLS-terminating reverse proxy. Adjust paths and domain to your own.
+
+**1. Place the code and install dependencies**
+
+```bash
+sudo mkdir -p /var/www/myblog-core && sudo chown "$USER":"$USER" /var/www/myblog-core
+cd /var/www/myblog-core
+# copy the repository here (git clone / rsync / scp)
+npm ci --omit=dev
+```
+
+**2. Configure `.env`**
+
+```bash
+cp .env.example .env
+```
+
+```ini
+HOST=127.0.0.1            # listen on loopback only; Nginx faces the public
+PORT=3000
+NODE_ENV=production       # makes cookies Secure -> requires HTTPS
+SITE_NAME=My Blog
+SESSION_SECRET=<openssl rand -base64 32>
+ADMIN_USERNAME=admin      # only used on first launch
+ADMIN_PASSWORD=<a strong password>
+```
+
+> `NODE_ENV=production` marks cookies `Secure`, so the site must be served over HTTPS. For a plain-HTTP trial run use `development`.
+
+**3. Create writable directories**
+
+The app creates and writes `db/` (including WAL files), `sessions/`, and `public/uploads/` at runtime.
+
+```bash
+mkdir -p db sessions public/uploads
+chmod -R u+rwX db sessions public/uploads
+```
+
+**4. systemd unit**
+
+`/etc/systemd/system/myblog-core.service`:
+
+```ini
+[Unit]
+Description=myblog-core
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/myblog-core
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node app.js
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now myblog-core
+sudo systemctl status myblog-core --no-pager
+```
+
+> `User=www-data` must be able to write `db/`, `sessions/`, and `public/uploads/` (e.g. `sudo chown -R www-data:www-data` on those three directories).
+
+**5. Nginx reverse proxy**
+
+```nginx
+server {
+    listen 80;
+    server_name blog.example.com;
+
+    client_max_body_size 8m;   # image uploads (multer itself caps at 5 MB)
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+When you are ready for HTTPS, add `listen 443 ssl;` plus the certificate paths (e.g. `sudo certbot --nginx`) — required if `NODE_ENV=production`.
+
+**6. Verify**
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3000/admin/login   # expect 200
+sudo journalctl -u myblog-core -n 30 --no-pager
+```
+
+**Common pitfalls**
+
+- **Login works locally but not behind Nginx** — cookies are `Secure` while the site is served over plain HTTP. Use HTTPS, or switch to `NODE_ENV=development` for a quick trial.
+- **Nginx returns 502** — the service is down, or `HOST`/`PORT` in `.env` do not match `proxy_pass`.
+- **Uploads fail with 500** — `public/uploads/` is not writable by the service user.
+- **Client IPs in logs look wrong** — `X-Forwarded-For` is not passed through; the app runs with `trust proxy` enabled and relies on it.
 
 ## Database Backup
 
