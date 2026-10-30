@@ -21,7 +21,7 @@
     <%- include('../partials/admin-nav', { active: 'site', csrfToken }) %>
 
     <!-- ===== 站点设置：统一大表单（4 区块 + 单一 Sticky 保存）===== -->
-    <form method="POST" action="/admin/settings/site" enctype="multipart/form-data" class="settings-form" id="siteSettingsForm">
+    <form method="POST" action="/admin/settings/site?_csrf=<%= encodeURIComponent(csrfToken) %>" enctype="multipart/form-data" class="settings-form" id="siteSettingsForm">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
       <!-- 区块 1：基础信息 -->

@@ -426,7 +426,8 @@ const csrfProtection = csrf({
   value: (req) => {
     return req.headers['csrf-token'] ||
            req.headers['x-csrf-token'] ||
-           (req.body && req.body._csrf);
+           (req.body && req.body._csrf) ||
+           (req.query && req.query._csrf);
   }
 });
 

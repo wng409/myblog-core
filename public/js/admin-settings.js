@@ -483,4 +483,44 @@
       });
     }
   });
+
+  // ==================== 站点设置：主题色取色器 / 文本值联动 ====================
+  // 取色器（name=theme_color）是唯一可提交字段；文本框仅作展示与手动输入同步，
+  // 避免用户往文本框粘贴色值后「保存了却没生效」。
+  (function initThemeColorSync() {
+    var colorInput = document.getElementById('themeColorInput');
+    var textInput = document.getElementById('themeColorText');
+    if (!colorInput || !textInput) return;
+
+    var HEX_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+    function expand(hex) {
+      // #abc -> #aabbcc，取色器只接受 6 位
+      if (hex.length === 4) {
+        return '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+      }
+      return hex;
+    }
+
+    colorInput.addEventListener('input', function () {
+      textInput.value = colorInput.value;
+    });
+
+    textInput.addEventListener('input', function () {
+      var v = textInput.value.trim();
+      if (!HEX_RE.test(v)) return;
+      colorInput.value = expand(v);
+    });
+
+    // 失焦时把非法输入回滚为当前生效色值，并同步取色器
+    textInput.addEventListener('blur', function () {
+      var v = textInput.value.trim();
+      if (!HEX_RE.test(v)) {
+        textInput.value = colorInput.value;
+        return;
+      }
+      colorInput.value = expand(v);
+      textInput.value = colorInput.value;
+    });
+  })();
 })();

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="<%= lang %>">
 <head>
   <%- include('../partials/theme-init') %>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title><%= t('admin.dashboard.title') %></title>
   <link rel="stylesheet" href="/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
@@ -18,6 +18,7 @@
         <a href="/" class="btn btn-secondary"><%= t('admin.viewSite') %></a>
       </div>
     </div>
+
     <%- include('../partials/admin-nav', { active: 'dashboard', csrfToken }) %>
 
     <% if (message) { %>
@@ -27,43 +28,49 @@
       <div class="alert alert-error"><%= error %></div>
     <% } %>
 
-    <h2><%= t('admin.posts.heading') %></h2>
-    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
-      <a href="/admin/posts/new" class="btn"><%= t('admin.posts.new') %></a>
+    <div class="admin-toolbar">
+      <a href="/admin/posts/new" class="btn">
+        <i class="fas fa-plus"></i> <%= t('admin.posts.new') %>
+      </a>
       <a href="/admin/posts/trash" class="btn btn-secondary">
         <i class="fas fa-trash"></i> <%= t('admin.posts.trash') %><% if (trashCount) { %> (<%= trashCount %>)<% } %>
       </a>
     </div>
-    <table class="admin-table">
-      <thead>
-        <tr>
-          <th><%= t('admin.posts.colTitle') %></th>
-          <th><%= t('admin.posts.colTags') %></th>
-          <th><%= t('admin.posts.colCreated') %></th>
-          <th><%= t('admin.posts.colActions') %></th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if (posts && posts.length > 0) { %>
-          <% posts.forEach(post => { %>
-            <tr>
-              <td><%= post.title %></td>
-              <td><%= post.tags %></td>
-              <td><%= fmtTime(post.created_at).slice(0,10) %></td>
-              <td>
-                <a href="/admin/posts/edit/<%= post.id %>" class="action-link"><%= t('admin.posts.edit') %></a>
-                <form method="POST" action="/admin/posts/delete/<%= post.id %>" style="display:inline;" data-confirm="<%= t('admin.posts.confirmDelete') %>">
-                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                  <button type="submit" class="delete-btn"><%= t('admin.posts.delete') %></button>
-                </form>
-              </td>
-            </tr>
-          <% }) %>
-        <% } else { %>
-          <tr><td colspan="4"><%= t('admin.posts.empty') %></td></tr>
-        <% } %>
-      </tbody>
-    </table>
+
+    <h2><%= t('admin.posts.heading') %></h2>
+
+    <% if (posts && posts.length > 0) { %>
+      <div class="admin-card-list">
+        <% posts.forEach(post => { %>
+          <div class="admin-item">
+            <div class="admin-item-main">
+              <div class="admin-item-title"><%= post.title %></div>
+              <div class="admin-item-meta">
+                <% if (post.tags) { %>
+                  <span><i class="fas fa-tags"></i> <%= post.tags %></span>
+                <% } %>
+                <span><i class="far fa-clock"></i> <%= fmtTime(post.created_at).slice(0, 10) %></span>
+              </div>
+            </div>
+            <div class="admin-item-actions">
+              <a href="/admin/posts/edit/<%= post.id %>" class="icon-btn icon-btn-edit"
+                 title="<%= t('admin.posts.edit') %>" aria-label="<%= t('admin.posts.edit') %>">
+                <i class="fas fa-edit"></i>
+              </a>
+              <form method="POST" action="/admin/posts/delete/<%= post.id %>" data-confirm="<%= t('admin.posts.confirmDelete') %>">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="icon-btn icon-btn-danger"
+                        title="<%= t('admin.posts.delete') %>" aria-label="<%= t('admin.posts.delete') %>">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <p class="empty-tip"><%= t('admin.posts.empty') %></p>
+    <% } %>
   </div>
 
   <script src="/js/main.js"></script>

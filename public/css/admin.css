@@ -5,8 +5,8 @@
 /* ---------- 后台专用变量 ---------- */
 :root {
   /* ---------- HarmonyOS 设计令牌 ---------- */
-  --admin-brand: #E60012;
-  --admin-brand-hover: #C4000F;
+  --admin-brand: var(--brand-color, #E60012);
+  --admin-brand-hover: color-mix(in srgb, var(--brand-color, #E60012) 85%, black);
 
   --admin-bg-page: #F1F3F5;
   --admin-bg-card: #FFFFFF;
@@ -653,8 +653,8 @@
     text-decoration: none;
   }
   .admin-nav a.active {
-    background: var(--accent-soft);
-    color: var(--hw-red);
+    background: color-mix(in srgb, var(--brand-color, #e60012) 12%, transparent);
+    color: var(--brand-color, #e60012);
     font-weight: 600;
   }
 
