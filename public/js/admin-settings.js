@@ -145,6 +145,7 @@ function openSheet(row) {
   sheetBody.appendChild(fields);   // DOM 移动，字段仍属于原 form
   sheet.classList.add('open');
   if (sheetMask) sheetMask.classList.add('show');
+  document.body.style.overflow = 'hidden';   // 打开抽屉锁滚动，避免背景误触
 }
 
 function closeSheet() {
@@ -164,8 +165,25 @@ function closeSheet() {
   }
   if (sheet) sheet.classList.remove('open');
   if (sheetMask) sheetMask.classList.remove('show');
+  document.body.style.overflow = '';   // 解除锁滚动
   updateIndices();
 }
+
+// 抽屉底部的「取消 / 保存」（移动端）
+(function bindSheetButtons() {
+  var cancelBtn = document.getElementById('bannerSheetCancel');
+  var saveBtn = document.getElementById('bannerSheetSave');
+  if (cancelBtn) cancelBtn.addEventListener('click', closeSheet);
+  if (saveBtn) {
+    saveBtn.addEventListener('click', function () {
+      closeSheet();   // 先把字段移回原行，再收集
+      var hidden = document.getElementById('bannerItemsInput');
+      if (hidden && typeof collectBanners === 'function') hidden.value = JSON.stringify(collectBanners());
+      var form = document.getElementById('bannerForm');
+      if (form) form.submit();
+    });
+  }
+})();
 
 // ==================== Banner 图片上传 ====================
 document.addEventListener('click', function (e) {

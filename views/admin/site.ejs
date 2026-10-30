@@ -14,7 +14,9 @@
   <div class="admin-container">
     <div class="admin-header">
       <h1><%= t('admin.nav.site') %></h1>
-      <a href="/" class="btn btn-secondary"><%= t('admin.viewSite') %></a>
+      <div class="header-actions">
+        <a href="/" class="btn btn-secondary"><%= t('admin.viewSite') %></a>
+      </div>
     </div>
     <%- include('../partials/admin-nav', { active: 'site', csrfToken }) %>
 
@@ -124,7 +126,8 @@
             <template id="socialRowTpl">
               <div class="social-row">
                 <i class="social-icon fab fa-github"></i>
-                <select class="form-control social-type">
+                <div class="hm-select-container">
+<select class="form-control social-type">
                   <option value="github">GitHub</option>
                   <option value="email">Email</option>
                   <option value="bilibili">Bilibili</option>
@@ -134,6 +137,9 @@
                   <option value="wechat">微信</option>
                   <option value="link"></option>
                 </select>
+<div class="hm-select-trigger"><span class="trigger-text"></span><span class="icon">▼</span></div>
+<ul class="hm-select-options"></ul>
+</div>
                 <input type="text" class="form-control social-url">
                 <button type="button" class="btn-icon-danger social-del" title="<%= t('admin.settings.remove') %>"><i class="fas fa-trash"></i></button>
               </div>
@@ -176,11 +182,15 @@
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="form-group">
           <label for="siteLangSelect"><%= t('admin.settings.lang') %></label>
-          <select name="site_lang" id="siteLangSelect">
+          <div class="hm-select-container">
+<select name="site_lang" id="siteLangSelect">
             <% LANGS.forEach(code => { %>
               <option value="<%= code %>" <%= siteLang === code ? 'selected' : '' %>><%= getLangLabel(code) %></option>
             <% }) %>
           </select>
+<div class="hm-select-trigger"><span class="trigger-text"></span><span class="icon">▼</span></div>
+<ul class="hm-select-options"></ul>
+</div>
         </div>
         <button type="submit" class="btn"><%= t('admin.settings.saveLang') %></button>
       </form>

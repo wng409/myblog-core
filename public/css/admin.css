@@ -1920,3 +1920,146 @@ input[type="color"] {
   .social-row { flex-wrap: wrap; }
   .social-row .social-type, .social-row .social-url { width: 100%; }
 }
+
+/* ============================================================
+   顶栏按钮组 / 编辑页吸底 / 抽屉底部按钮 / 触控热区
+   ============================================================ */
+.admin-header .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.admin-nav-tools { display: flex; align-items: center; gap: 8px; }
+.admin-header .admin-logout button {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 40px; padding: 0 14px;
+  border: 1px solid var(--border); border-radius: var(--admin-radius-btn, 8px);
+  background: var(--admin-bg-card); color: var(--admin-text-secondary);
+  cursor: pointer; font-size: .92rem;
+}
+.admin-header .admin-logout button:hover { border-color: var(--admin-brand); color: var(--admin-brand); }
+.admin-header.has-logout { justify-content: flex-start; gap: 10px; }
+.admin-header.has-logout h1 { margin-right: auto; }
+
+/* 编辑页吸底操作栏：保存永远可见 */
+.form-actions-sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  background: var(--admin-bg-card);
+  box-shadow: 0 -6px 16px rgba(0, 0, 0, .06);
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  margin: 8px -16px -16px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* 移动端抽屉底部的取消 / 保存 */
+.sheet-footer {
+  display: flex;
+  gap: 10px;
+  padding: 12px 0 calc(6px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+.sheet-footer .btn { flex: 1; }
+
+@media (max-width: 768px) {
+  .admin-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .admin-header h1 { flex: 1 0 100%; margin-right: 0; margin-bottom: 0; font-size: 1.35rem; }
+  .admin-header .btn,
+  .admin-header .header-actions { width: auto; flex: none; }
+  .admin-header .header-actions { margin-left: auto; }
+  .admin-header .header-actions .admin-logout { width: auto; flex: none; }
+  .admin-header .header-actions .admin-logout button { width: auto; }
+  .admin-header .btn { box-sizing: border-box; text-align: center; }
+}
+
+/* ============================================================
+   鸿蒙风自定义下拉框（原生 select 隐藏，仍承载表单真值）
+   ============================================================ */
+.hm-select-container { position: relative; width: 100%; user-select: none; }
+.hm-select-container select { display: none; }
+
+.hm-select-trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 44px;
+  padding: 0 16px;
+  background: var(--admin-bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--admin-text-primary);
+  cursor: pointer;
+  transition: all .2s ease;
+}
+.hm-select-trigger:hover { border-color: var(--admin-brand); box-shadow: 0 2px 8px rgba(0, 0, 0, .04); }
+.hm-select-container.is-open .hm-select-trigger { border-color: var(--admin-brand); }
+.hm-select-trigger .icon {
+  font-size: 12px;
+  color: var(--admin-text-tertiary);
+  transition: transform .3s cubic-bezier(.16, 1, .3, 1);
+}
+.hm-select-container.is-open .hm-select-trigger .icon { transform: rotate(180deg); }
+
+.hm-select-options {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0; right: 0;
+  max-height: 250px;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--admin-bg-card) 92%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, .1), 0 8px 10px -6px rgba(0, 0, 0, .1);
+  padding: 6px;
+  margin: 0;
+  list-style: none;
+  z-index: 120;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all .25s cubic-bezier(.16, 1, .3, 1);
+}
+.hm-select-container.drop-up .hm-select-options {
+  top: auto;
+  bottom: calc(100% + 8px);
+  transform: translateY(10px);
+}
+.hm-select-container.is-open .hm-select-options {
+  opacity: 1; visibility: visible; transform: translateY(0);
+}
+.hm-select-options li {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  transition: background .15s;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.hm-select-options li:hover { background: var(--admin-bg-input); }
+.hm-select-options li.is-selected {
+  background: color-mix(in srgb, var(--brand-color, #e60012) 10%, transparent);
+  color: var(--brand-color, #e60012);
+  font-weight: 500;
+}
+.hm-select-options li.is-selected::after { content: '✓'; font-size: 14px; font-weight: bold; }
+
+@media (max-width: 768px) {
+  .hm-select-trigger { height: 48px; }
+  .admin-container button, .admin-container .btn-sm, .sheet-close {
+    min-width: 44px; min-height: 44px;
+  }
+}

@@ -46,7 +46,7 @@ html {
   --footer-bg: #333333;
   --footer-text: #ffffff;
   --footer-muted: #b0b0b0;
-  --accent-soft: #ffe5e5;
+  --accent-soft: color-mix(in srgb, var(--brand-color, #e60012) 8%, transparent);
   color-scheme: light;
 
   /* 状态 / 提示色（多主题可覆写） */
@@ -114,7 +114,7 @@ html {
   --footer-bg: #141414;
   --footer-text: #e8e8e8;
   --footer-muted: #9a9a9a;
-  --accent-soft: rgba(230, 0, 18, 0.22);
+  --accent-soft: color-mix(in srgb, var(--brand-color, #e60012) 22%, transparent);
   --hw-border: #3d3d3d;
   --hw-light-gray: #2f2f2f;
   --hw-medium-gray: #b0b0b0;

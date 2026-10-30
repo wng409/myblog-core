@@ -16,7 +16,9 @@
   <div class="admin-container">
     <div class="admin-header">
       <h1><%= post ? t('posts.editor.edit') : t('posts.editor.new') %></h1>
-      <a href="/admin" class="btn btn-secondary"><%= t('posts.editor.backToList') %></a>
+      <div class="header-actions">
+        <a href="/admin" class="btn btn-secondary"><%= t('posts.editor.backToList') %></a>
+      </div>
     </div>
     <form method="POST" action="<%= action %>?_csrf=<%= csrfToken %>" enctype="multipart/form-data">
       <!-- [修复] CSRF token -->
@@ -61,7 +63,7 @@
         <label><%= t('posts.editor.content') %></label>
         <textarea name="content" id="markdown-editor"><%= post ? post.content : '' %></textarea>
       </div>
-      <div class="form-actions">
+      <div class="form-actions form-actions-sticky">
         <button type="submit" class="btn"><%= t('posts.editor.save') %></button>
         <a href="/admin" class="btn btn-secondary"><%= t('posts.editor.cancel') %></a>
       </div>
