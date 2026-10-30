@@ -1,19 +1,19 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="<%= lang %>">
 <head>
   <%- include('../partials/theme-init') %>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title><%= t('logs.title') %></title>
   <link rel="stylesheet" href="/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/admin.css">
   <%- include('../partials/brand-color') %>
 </head>
-<body data-lang="<%= lang %>">
+<body data-csrf="<%= csrfToken %>" data-lang="<%= lang %>">
   <div class="admin-container">
     <div class="admin-header">
-      <h1><%= t('logs.title') %><%= t('logs.countPrefix') %><%= total %><%= t('logs.countSuffix') %></h1>
+      <h1><%= t('logs.title') %> <span class="count"><%= t('logs.countPrefix') %><%= total %><%= t('logs.countSuffix') %></span></h1>
       <div class="header-actions">
         <a href="/" class="btn btn-secondary"><%= t('admin.viewSite') %></a>
       </div>
@@ -21,7 +21,39 @@
 
     <%- include('../partials/admin-nav', { active: 'logs', csrfToken }) %>
 
-    <!-- 快捷筛选 -->
+    <%
+      const actionLabel = (action) => {
+        const label = t('logs.action.' + action);
+        return label === 'logs.action.' + action ? action : label;
+      };
+
+      function fmtTarget(action, target) {
+        if (!target) return '—';
+        if (/^system_(anomaly|recover)_(disk|mem|cpu|netDrop)$/.test(action)) {
+          const v = parseFloat(target);
+          return isNaN(v) ? target : v + '%';
+        }
+        if (/^system_(anomaly|recover)_disk(Read|Write)$/.test(action)) {
+          const v = parseFloat(target);
+          if (isNaN(v)) return target;
+          if (v < 1024) return v.toFixed(0) + ' B/s';
+          if (v < 1024 * 1024) return (v / 1024).toFixed(1) + ' KB/s';
+          return (v / 1024 / 1024).toFixed(1) + ' MB/s';
+        }
+        return target;
+      }
+
+      const qs = (p) => {
+        const q = new URLSearchParams();
+        if (filterAction) q.set('action', filterAction);
+        if (filterUser)   q.set('user', filterUser);
+        if (filterIp)     q.set('ip', filterIp);
+        q.set('page', p);
+        return '?' + q.toString();
+      };
+    %>
+
+    <!-- 快捷筛选（core 独有，保留） -->
     <div class="quick-filters">
       <a href="/admin/logs" class="quick-btn <%= (!filterAction && !filterUser && !filterIp) ? 'active' : '' %>">
         <i class="fas fa-list"></i> <%= t('logs.filter.all') %>
@@ -37,131 +69,175 @@
       </a>
     </div>
 
-    <!-- 详细筛选 -->
-    <form method="GET" class="log-filter">
-      <label><%= t('logs.filter.action') %></label>
-      <select name="action">
-        <option value=""><%= t('logs.filter.all') %></option>
-        <optgroup label="<%= t('logs.optgroup.login') %>">
-          <option value="login_success"        <%= filterAction === 'login_success'        ? 'selected' : '' %>><%= t('logs.option.login_success') %></option>
-          <option value="login_fail"           <%= filterAction === 'login_fail'           ? 'selected' : '' %>><%= t('logs.option.login_fail') %></option>
-          <option value="login_fail_empty"     <%= filterAction === 'login_fail_empty'     ? 'selected' : '' %>><%= t('logs.option.login_fail_empty') %></option>
-          <option value="login_fail_nouser"    <%= filterAction === 'login_fail_nouser'    ? 'selected' : '' %>><%= t('logs.option.login_fail_nouser') %></option>
-          <option value="login_fail_disabled"  <%= filterAction === 'login_fail_disabled'  ? 'selected' : '' %>><%= t('logs.option.login_fail_disabled') %></option>
-          <option value="login_rate_limited"   <%= filterAction === 'login_rate_limited'   ? 'selected' : '' %>><%= t('logs.option.login_rate_limited') %></option>
-          <option value="logout"               <%= filterAction === 'logout'               ? 'selected' : '' %>><%= t('logs.option.logout') %></option>
-        </optgroup>
-        <optgroup label="<%= t('logs.optgroup.post') %>">
-          <option value="create_post"          <%= filterAction === 'create_post'          ? 'selected' : '' %>><%= t('logs.option.create_post') %></option>
-          <option value="update_post"          <%= filterAction === 'update_post'          ? 'selected' : '' %>><%= t('logs.option.update_post') %></option>
-          <option value="delete_post"          <%= filterAction === 'delete_post'          ? 'selected' : '' %>><%= t('logs.option.delete_post') %></option>
-          <option value="restore_post"         <%= filterAction === 'restore_post'         ? 'selected' : '' %>><%= t('logs.option.restore_post') %></option>
-          <option value="purge_post"           <%= filterAction === 'purge_post'           ? 'selected' : '' %>><%= t('logs.option.purge_post') %></option>
-          <option value="empty_trash"          <%= filterAction === 'empty_trash'          ? 'selected' : '' %>><%= t('logs.option.empty_trash') %></option>
-        </optgroup>
-        <optgroup label="<%= t('logs.optgroup.other') %>">
-          <option value="update_settings"      <%= filterAction === 'update_settings'      ? 'selected' : '' %>><%= t('logs.option.update_settings') %></option>
-          <option value="update_banner"        <%= filterAction === 'update_banner'        ? 'selected' : '' %>><%= t('logs.option.update_banner') %></option>
-          <option value="upload_image"         <%= filterAction === 'upload_image'         ? 'selected' : '' %>><%= t('logs.option.upload_image') %></option>
-          <option value="clean_orphan_images"  <%= filterAction === 'clean_orphan_images'  ? 'selected' : '' %>><%= t('logs.option.clean_orphan_images') %></option>
-        </optgroup>
-      </select>
-
-      <label><%= t('logs.filter.user') %></label>
-      <input type="text" name="user" value="<%= filterUser %>" placeholder="<%= t('logs.filter.userPlaceholder') %>">
-
-      <label><%= t('logs.filter.ip') %></label>
-      <input type="text" name="ip" value="<%= filterIp %>" placeholder="<%= t('logs.filter.ipPlaceholder') %>">
-
-      <div class="log-filter-actions">
-        <button type="submit" class="btn btn-sm"><%= t('logs.filter.submit') %></button>
-        <a href="/admin/logs" class="btn btn-secondary btn-sm"><%= t('logs.filter.clear') %></a>
+    <!-- 工具栏：搜索 + 高级筛选 + 刷新 -->
+    <div class="admin-toolbar">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="logSearch" placeholder="<%= t('logs.searchPh') %>">
       </div>
-    </form>
+      <button type="button" class="filter-toggle" id="logFilterToggle"><%= t('logs.filter.advanced') %></button>
+      <button type="button" class="btn btn-secondary btn-sm" id="logRefreshBtn"><%= t('logs.refresh') %></button>
+    </div>
 
-    <%
-      const actionLabel = (action) => {
-        const label = t('logs.action.' + action);
-        return label === 'logs.action.' + action ? action : label;
-      };
+    <!-- 高级筛选（PC 居中模态 / 移动端底部抽屉） -->
+    <div class="sheet-mask" id="logFilterMask"></div>
+    <div class="sheet" id="logFilterPanel" role="dialog" aria-modal="true" aria-label="<%= t('logs.filter.advanced') %>">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h3><%= t('logs.filter.advanced') %></h3>
+        <button type="button" class="sheet-close" id="logFilterClose" aria-label="<%= t('logs.detail.title') %>">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
 
-      function fmtTarget(action, target) {
-        return target || '—';
-      }
+      <form method="GET" class="log-filter">
+        <label><%= t('logs.filter.action') %></label>
+        <select name="action">
+          <option value=""><%= t('logs.filter.all') %></option>
+          <optgroup label="<%= t('logs.optgroup.login') %>">
+            <option value="login_success"        <%= filterAction === 'login_success'        ? 'selected' : '' %>><%= t('logs.option.login_success') %></option>
+            <option value="login_fail"           <%= filterAction === 'login_fail'           ? 'selected' : '' %>><%= t('logs.option.login_fail') %></option>
+            <option value="login_fail_empty"     <%= filterAction === 'login_fail_empty'     ? 'selected' : '' %>><%= t('logs.option.login_fail_empty') %></option>
+            <option value="login_fail_nouser"    <%= filterAction === 'login_fail_nouser'    ? 'selected' : '' %>><%= t('logs.option.login_fail_nouser') %></option>
+            <option value="login_fail_disabled"  <%= filterAction === 'login_fail_disabled'  ? 'selected' : '' %>><%= t('logs.option.login_fail_disabled') %></option>
+            <option value="login_rate_limited"   <%= filterAction === 'login_rate_limited'   ? 'selected' : '' %>><%= t('logs.option.login_rate_limited') %></option>
+            <option value="logout"               <%= filterAction === 'logout'               ? 'selected' : '' %>><%= t('logs.option.logout') %></option>
+          </optgroup>
+          <optgroup label="<%= t('logs.optgroup.moment') %>">
+            <option value="create_post"          <%= filterAction === 'create_post'          ? 'selected' : '' %>><%= t('logs.option.create_post') %></option>
+            <option value="update_post"          <%= filterAction === 'update_post'          ? 'selected' : '' %>><%= t('logs.option.update_post') %></option>
+            <option value="delete_post"          <%= filterAction === 'delete_post'          ? 'selected' : '' %>><%= t('logs.option.delete_post') %></option>
+            <option value="restore_post"         <%= filterAction === 'restore_post'         ? 'selected' : '' %>><%= t('logs.option.restore_post') %></option>
+            <option value="purge_post"           <%= filterAction === 'purge_post'           ? 'selected' : '' %>><%= t('logs.option.purge_post') %></option>
+            <option value="empty_trash"          <%= filterAction === 'empty_trash'          ? 'selected' : '' %>><%= t('logs.option.empty_trash') %></option>
+            <option value="create_moment"        <%= filterAction === 'create_moment'        ? 'selected' : '' %>><%= t('logs.option.create_moment') %></option>
+            <option value="delete_moment"        <%= filterAction === 'delete_moment'        ? 'selected' : '' %>><%= t('logs.option.delete_moment') %></option>
+          </optgroup>
+          <optgroup label="<%= t('logs.optgroup.user') %>">
+            <option value="create_user"          <%= filterAction === 'create_user'          ? 'selected' : '' %>><%= t('logs.option.create_user') %></option>
+            <option value="update_user"          <%= filterAction === 'update_user'          ? 'selected' : '' %>><%= t('logs.option.update_user') %></option>
+            <option value="delete_user"          <%= filterAction === 'delete_user'          ? 'selected' : '' %>><%= t('logs.option.delete_user') %></option>
+            <option value="enable_user"          <%= filterAction === 'enable_user'          ? 'selected' : '' %>><%= t('logs.option.enable_user') %></option>
+            <option value="disable_user"         <%= filterAction === 'disable_user'         ? 'selected' : '' %>><%= t('logs.option.disable_user') %></option>
+            <option value="reset_password"       <%= filterAction === 'reset_password'       ? 'selected' : '' %>><%= t('logs.option.reset_password') %></option>
+          </optgroup>
+          <optgroup label="<%= t('logs.optgroup.media') %>">
+            <option value="upload_image"         <%= filterAction === 'upload_image'         ? 'selected' : '' %>><%= t('logs.option.upload_image') %></option>
+            <option value="delete_image"         <%= filterAction === 'delete_image'         ? 'selected' : '' %>><%= t('logs.option.delete_image') %></option>
+            <option value="upload_html"          <%= filterAction === 'upload_html'          ? 'selected' : '' %>><%= t('logs.option.upload_html') %></option>
+            <option value="clean_orphan_images"  <%= filterAction === 'clean_orphan_images'  ? 'selected' : '' %>><%= t('logs.option.clean_orphan_images') %></option>
+          </optgroup>
+          <optgroup label="<%= t('logs.optgroup.other') %>">
+            <option value="update_settings"      <%= filterAction === 'update_settings'      ? 'selected' : '' %>><%= t('logs.option.update_settings') %></option>
+            <option value="update_banner"        <%= filterAction === 'update_banner'        ? 'selected' : '' %>><%= t('logs.option.update_banner') %></option>
+            <option value="update_username"      <%= filterAction === 'update_username'      ? 'selected' : '' %>><%= t('logs.option.update_username') %></option>
+            <option value="change_password"      <%= filterAction === 'change_password'      ? 'selected' : '' %>><%= t('logs.option.change_password') %></option>
+          </optgroup>
+        </select>
 
-      const qs = (p) => {
-        const q = new URLSearchParams();
-        if (filterAction) q.set('action', filterAction);
-        if (filterUser)   q.set('user', filterUser);
-        if (filterIp)     q.set('ip', filterIp);
-        q.set('page', p);
-        return '?' + q.toString();
-      };
-    %>
+        <label><%= t('logs.filter.user') %></label>
+        <input type="text" name="user" value="<%= filterUser %>" placeholder="<%= t('logs.filter.userPlaceholder') %>">
 
+        <label><%= t('logs.filter.ip') %></label>
+        <input type="text" name="ip" value="<%= filterIp %>" placeholder="<%= t('logs.filter.ipPlaceholder') %>">
+
+        <div class="log-filter-actions">
+          <button type="submit" class="btn btn-sm"><%= t('logs.filter.submit') %></button>
+          <a href="/admin/logs" class="btn btn-secondary btn-sm"><%= t('logs.filter.clear') %></a>
+        </div>
+      </form>
+    </div>
+
+    <!-- 列表 -->
+    <div id="logListWrapper">
     <% if (logs.length === 0) { %>
-      <div class="empty">
-        <% if (filterAction || filterUser || filterIp) { %>
-          <%= t('logs.empty.filtered') %>
-        <% } else { %>
-          <%= t('logs.empty.none') %>
-        <% } %>
+      <div class="list-card">
+        <div class="log-row">
+          <div class="log-info">
+            <div class="log-main">
+              <span class="log-action-text"><%= (filterAction || filterUser || filterIp) ? t('logs.empty.filtered') : t('logs.empty.none') %></span>
+            </div>
+          </div>
+        </div>
       </div>
     <% } else { %>
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:60px;">ID</th>
-              <th style="width:110px;"><%= t('logs.col.user') %></th>
-              <th style="width:160px;"><%= t('logs.col.action') %></th>
-              <th style="width:180px;"><%= t('logs.col.target') %></th>
-              <th style="width:130px;">IP</th>
-              <th>User-Agent</th>
-              <th style="width:160px;"><%= t('logs.col.time') %></th>
-            </tr>
-          </thead>
-          <tbody>
-            <% logs.forEach(l => { %>
-              <tr>
-                <td><%= l.id %></td>
-                <td><%= l.username || '—' %></td>
-                <td>
-                  <span class="action action-<%= l.action %>" title="<%= l.action %>">
-                    <%= actionLabel(l.action) %>
-                  </span>
-                </td>
-                <td><%= fmtTarget(l.action, l.target) %></td>
-                <td><%= l.ip || '—' %></td>
-                <td><%= l.user_agent || '—' %></td>
-                <td><%= fmtTime(l.created_at) %></td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
+      <div class="list-card" id="logList" data-max-id="<%= logs[0] ? logs[0].id : 0 %>">
+        <% logs.forEach(l => { %>
+          <div class="log-row"
+               data-id="<%= l.id %>"
+               data-user="<%= l.username || '—' %>"
+               data-action="<%= actionLabel(l.action) %>"
+               data-target="<%= fmtTarget(l.action, l.target) %>"
+               data-ip="<%= l.ip || '—' %>"
+               data-ua="<%= l.user_agent || '—' %>"
+               data-time="<%= fmtTime(l.created_at) %>"
+               data-search="<%= (String(l.ip || '') + ' ' + String(l.username || '') + ' ' + String(fmtTarget(l.action, l.target)) + ' ' + String(l.user_agent || '')).replace(/"/g, '&quot;') %>">
+            <div class="log-info">
+              <div class="log-main">
+                <div class="dot dot-<%= l.action %>"></div>
+                <span class="log-user"><%= l.username || '—' %></span>
+                <span class="log-action-text op-<%= l.action %>"><%= actionLabel(l.action) %></span>
+              </div>
+              <div class="log-meta">
+                <span title="<%= fmtTime(l.created_at) %>">
+                  <i class="far fa-clock"></i> <%= fmtTime(l.created_at).slice(5, 16) %>
+                </span>
+                <span class="log-ip" title="<%= l.ip || '—' %>"><i class="fas fa-network-wired"></i> <%= l.ip || '—' %></span>
+                <span class="log-target-txt" title="<%= fmtTarget(l.action, l.target) %>"><i class="fas fa-bullseye"></i> <%= fmtTarget(l.action, l.target) %></span>
+                <span class="log-ua" data-ua="<%= l.user_agent || '' %>" title="<%= l.user_agent || '—' %>">
+                  <i class="fas fa-desktop"></i> <span class="ua-label">—</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        <% }) %>
       </div>
 
       <% if (totalPages > 1) { %>
-        <div class="pagination">
-          <% if (page > 1) { %>
-            <a href="<%= qs(page - 1) %>">« <%= t('logs.pagination.prev') %></a>
-          <% } else { %>
-            <span class="disabled">« <%= t('logs.pagination.prev') %></span>
-          <% } %>
-
-          <span class="current"><%= page %> / <%= totalPages %></span>
-
-          <% if (page < totalPages) { %>
-            <a href="<%= qs(page + 1) %>"><%= t('logs.pagination.next') %> »</a>
-          <% } else { %>
-            <span class="disabled"><%= t('logs.pagination.next') %> »</span>
-          <% } %>
+        <div class="pagination-wrap">
+          <ul class="pagination">
+            <% if (page > 1) { %>
+              <li><a href="<%= qs(page - 1) %>" class="page-btn"><i class="fas fa-chevron-left"></i> <%= t('logs.pagination.prev') %></a></li>
+            <% } else { %>
+              <li><span class="page-btn disabled"><i class="fas fa-chevron-left"></i> <%= t('logs.pagination.prev') %></span></li>
+            <% } %>
+            <li><span class="page-num active"><%= page %> / <%= totalPages %></span></li>
+            <% if (page < totalPages) { %>
+              <li><a href="<%= qs(page + 1) %>" class="page-btn"><%= t('logs.pagination.next') %> <i class="fas fa-chevron-right"></i></a></li>
+            <% } else { %>
+              <li><span class="page-btn disabled"><%= t('logs.pagination.next') %> <i class="fas fa-chevron-right"></i></span></li>
+            <% } %>
+          </ul>
         </div>
       <% } %>
     <% } %>
+    </div>
+  </div>
+
+  <!-- 日志详情抽屉（仅移动端） -->
+  <div class="sheet-mask" id="logDetailMask"></div>
+  <div class="sheet" id="logDetailSheet" role="dialog" aria-modal="true" aria-label="<%= t('logs.detail.title') %>">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h3><%= t('logs.detail.title') %></h3>
+      <button type="button" class="sheet-close" id="logDetailClose" aria-label="<%= t('logs.detail.title') %>">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="info-row"><div class="label"><%= t('logs.detail.id') %></div><div class="value" id="detailId">—</div></div>
+      <div class="info-row"><div class="label"><%= t('logs.detail.user') %></div><div class="value" id="detailUser">—</div></div>
+      <div class="info-row"><div class="label"><%= t('logs.detail.action') %></div><div class="value" id="detailAction">—</div></div>
+      <div class="info-row"><div class="label"><%= t('logs.detail.target') %></div><div class="value" id="detailTarget">—</div></div>
+      <div class="info-row"><div class="label"><%= t('logs.detail.ip') %></div><div class="value" id="detailIp">—</div></div>
+      <div class="info-row"><div class="label"><%= t('logs.detail.device') %></div><div class="value" id="detailDevice">—</div></div>
+      <div class="info-row"><div class="label"><%= t('logs.detail.time') %></div><div class="value" id="detailTime">—</div></div>
+      <div class="info-row detail-ua-row"><div class="label"><%= t('logs.detail.ua') %></div><div class="value" id="detailUa">—</div></div>
+    </div>
   </div>
 
   <script src="/js/main.js"></script>
   <script src="/js/toast.js"></script>
+  <script src="/js/admin-logs.js" defer></script>
 </body>
 </html>
