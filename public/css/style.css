@@ -542,10 +542,10 @@ header {
   height: 100%;
 }
 
-/* 图片更大：16:10 比例 */
+/* 图片更大：900 × 600 比例 */
 .card-image-wrapper {
   width: 100%;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 900 / 600;
   overflow: hidden;
   position: relative;
   background: var(--surface-muted);
@@ -592,32 +592,6 @@ header {
 
 .blog-card:hover .card-content h3 {
   color: var(--hw-red);
-}
-
-/* 保留"了解更多"和箭头 */
-.read-more {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--hw-red);
-  font-size: 0.82rem;
-  font-weight: 500;
-  transition: color 0.3s, gap 0.25s;
-  margin-top: auto;
-  padding-top: 4px;
-}
-
-.read-more i {
-  font-size: 0.7rem;
-  transition: transform 0.3s;
-}
-
-.blog-card:hover .read-more {
-  color: var(--hw-red-dark);
-}
-
-.blog-card:hover .read-more i {
-  transform: translateX(4px);
 }
 
 /* ============================================================
@@ -796,7 +770,7 @@ header {
   color: inherit;
 }
 .post-card-cover {
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 900 / 600;
   overflow: hidden;
   background: var(--surface-muted);
 }
@@ -1054,27 +1028,12 @@ header {
   .posts-hero { padding: 40px 0 16px; }
   .posts-hero h1 { font-size: 1.6rem; }
   .posts-grid { grid-template-columns: 1fr; gap: 16px; }
-  .post-card-cover { aspect-ratio: 16 / 9; }
+  .post-card-cover { aspect-ratio: 900 / 600; }
 }
 
 /* ============================================================
    6. 文章详情页
    ============================================================ */
-.read-more {
-  color: var(--hw-red);
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-}
-
-.read-more i {
-  margin-left: 5px;
-  transition: transform 0.3s;
-}
-
-.read-more:hover i {
-  transform: translateX(3px);
-}
 
 /* ============================================================
    7. 页脚

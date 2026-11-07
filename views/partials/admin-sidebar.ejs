@@ -1,0 +1,54 @@
+<%
+  const _sbActive = (typeof active !== 'undefined') ? active : '';
+  const _sbCsrf = (typeof csrfToken !== 'undefined') ? csrfToken : '';
+  const _sbCollapsed = !!(locals.adminSidebarCollapsed);
+  const _sbBrand = (locals.settings && locals.settings.site_title) || siteName || 'MyBlog';
+%>
+<aside class="admin-sidebar <%= _sbCollapsed ? 'collapsed' : '' %>" id="adminSidebar"
+       data-confirm-logout="<%= t('admin.confirmLogout') %>"
+       data-collapse-label="<%= t('admin.sidebar.collapse') %>"
+       data-expand-label="<%= t('admin.sidebar.expand') %>"
+       data-open-menu="<%= t('admin.sidebar.openMenu') %>">
+  <div class="admin-sidebar-brand">
+    <div class="admin-brand-logo" aria-hidden="true"><i class="fas fa-code"></i></div>
+    <span class="admin-brand-name"><%= _sbBrand %></span>
+    <button type="button" class="admin-collapse-btn" id="adminCollapseBtn"
+            title="<%= t(_sbCollapsed ? 'admin.sidebar.expand' : 'admin.sidebar.collapse') %>"
+            aria-label="<%= t(_sbCollapsed ? 'admin.sidebar.expand' : 'admin.sidebar.collapse') %>">
+      <i class="fas fa-angles-left"></i>
+    </button>
+  </div>
+
+  <nav class="admin-sidebar-nav" aria-label="<%= t('admin.sidebar.navLabel') %>">
+    <a href="/admin" class="admin-nav-item <%= _sbActive === 'dashboard' ? 'active' : '' %>">
+      <i class="fas fa-file-alt"></i><span class="admin-nav-text"><%= t('admin.nav.posts') %></span>
+    </a>
+    <a href="/admin/profile" class="admin-nav-item <%= _sbActive === 'profile' ? 'active' : '' %>">
+      <i class="fas fa-user"></i><span class="admin-nav-text"><%= t('admin.nav.profile') %></span>
+    </a>
+    <a href="/admin/settings" class="admin-nav-item <%= _sbActive === 'settings' ? 'active' : '' %>">
+      <i class="fas fa-sliders-h"></i><span class="admin-nav-text"><%= t('admin.nav.settings') %></span>
+    </a>
+    <a href="/admin/site" class="admin-nav-item <%= _sbActive === 'site' ? 'active' : '' %>">
+      <i class="fas fa-globe"></i><span class="admin-nav-text"><%= t('admin.nav.site') %></span>
+    </a>
+    <a href="/admin/logs" class="admin-nav-item <%= _sbActive === 'logs' ? 'active' : '' %>">
+      <i class="fas fa-clipboard-list"></i><span class="admin-nav-text"><%= t('admin.nav.logs') %></span>
+    </a>
+  </nav>
+
+  <div class="admin-sidebar-foot">
+    <div class="admin-sidebar-theme">
+      <%- include('./theme-switch', { variant: 'sidebar', id: 'themeToggleAdmin' }) %>
+    </div>
+    <a href="/" class="admin-sidebar-link">
+      <i class="fas fa-code"></i><span class="admin-nav-text"><%= t('admin.viewSite') %></span>
+    </a>
+    <form method="POST" action="/admin/logout" class="admin-sidebar-logout">
+      <input type="hidden" name="_csrf" value="<%= _sbCsrf %>">
+      <button type="submit">
+        <i class="fas fa-sign-out-alt"></i><span class="admin-nav-text"><%= t('admin.logout') %></span>
+      </button>
+    </form>
+  </div>
+</aside>

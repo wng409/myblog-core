@@ -11,6 +11,7 @@
   <%- include('../../partials/brand-color') %>
 </head>
 <body data-lang="<%= lang %>">
+  <%- include('../../partials/admin-shell-start', { active: 'dashboard', csrfToken }) %>
   <div class="admin-container">
     <div class="admin-header">
       <h1><%= t('posts.trash.title') %></h1>
@@ -18,8 +19,6 @@
         <a href="/admin" class="btn btn-secondary"><%= t('posts.trash.backToPosts') %></a>
       </div>
     </div>
-
-    <%- include('../../partials/admin-nav', { active: 'trash', csrfToken }) %>
 
     <% if (message) { %>
       <div class="alert alert-success"><%= message %></div>
@@ -91,6 +90,7 @@
       </div>
     </div>
   </div>
+  <%- include('../../partials/admin-shell-end') %>
 
   <script src="/js/main.js"></script>
   <script src="/js/toast.js"></script>

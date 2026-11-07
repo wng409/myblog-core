@@ -1,12 +1,17 @@
 <%
   var _variant = (typeof variant !== 'undefined') ? variant : 'pc';
   var _id = (typeof id !== 'undefined') ? id : 'themeToggle';
-  var _switchClass = _variant === 'mobile' ? 'theme-switch theme-switch--circle' : 'theme-switch';
+  var _switchClass = _variant === 'mobile'
+    ? 'theme-switch theme-switch--circle'
+    : _variant === 'sidebar'
+      ? 'theme-switch theme-switch--sidebar'
+      : 'theme-switch';
 %>
 <div class="<%= _switchClass %>" data-theme-switch>
   <button class="theme-toggle" id="<%= _id %>" type="button" aria-label="<%= t('theme.toggle') %>" aria-haspopup="true" aria-expanded="false">
     <i class="theme-toggle-icon fas fa-circle-half-stroke" aria-hidden="true"></i>
     <% if (_variant === 'mobile') { %><span><%= t('theme.label') %></span><% } %>
+    <% if (_variant === 'sidebar') { %><span class="admin-nav-text"><%= t('theme.label') %></span><% } %>
   </button>
   <div class="theme-menu" role="menu" aria-label="<%= t('theme.menu') %>">
     <button type="button" role="menuitemradio" aria-checked="false" data-theme-value="system"><i class="fas fa-circle-half-stroke" aria-hidden="true"></i><span><%= t('theme.system') %></span></button>

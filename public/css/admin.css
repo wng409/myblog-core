@@ -872,27 +872,31 @@ html[data-theme] .editor-prompt input {
 /* ============================================================
    18. 后台日志页筛选器（移动端抽屉）
    ============================================================ */
-/* PC 端默认隐藏触发按钮和头部 */
-.filter-toggle { display: none; }
+/* 筛选按钮：与前台 list.ejs 同款图标按钮 */
+.filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  background: var(--admin-bg-card);
+  border: 1px solid var(--hw-border);
+  border-radius: 6px;
+  color: var(--admin-text-primary);
+  font-size: 16px;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.filter-toggle:hover {
+  color: var(--admin-brand);
+  border-color: var(--admin-brand);
+}
 .sidebar-header { display: none; }
 
 /* 移动端样式 */
 @media (max-width: 768px) {
-  /* 显示触发按钮 */
-  .filter-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 16px;
-    background: var(--card-bg);
-    border: 1px solid var(--hw-border);
-    border-radius: 6px;
-    color: var(--text);
-    font-size: 0.9rem;
-    margin-bottom: 16px;
-    cursor: pointer;
-  }
-
   /* 抽屉容器 */
   .log-filter-panel {
     position: fixed;
@@ -1502,17 +1506,6 @@ body:has(.admin-container) {
 /* 隐藏原生文件输入（仅作为 JS 触发目标） */
 .img-input-wrap input[type="file"] { display: none; }
 
-/* ---------- PC 端也显示「高级筛选」按钮（点击弹出居中模态框） ---------- */
-@media (min-width: 769px) {
-  .filter-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 42px;
-    padding: 0 16px;
-  }
-}
-
 /* ============================================================
    最终精修：私密锁 / 动态半列表
    ============================================================ */
@@ -2061,5 +2054,313 @@ input[type="color"] {
   .hm-select-trigger { height: 48px; }
   .admin-container button, .admin-container .btn-sm, .sheet-close {
     min-width: 44px; min-height: 44px;
+  }
+}
+
+/* ============================================================
+   后台侧边栏布局（PC 240/64 + 移动端抽屉）
+   ============================================================ */
+:root {
+  --admin-sidebar-w: 240px;
+  --admin-sidebar-mini: 64px;
+  --admin-sidebar-ease: cubic-bezier(.16, 1, .3, 1);
+}
+
+.admin-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--admin-sidebar-w);
+  display: flex;
+  flex-direction: column;
+  background: var(--admin-bg-card);
+  border-right: 1px solid var(--hw-border);
+  overflow: visible;
+  z-index: 1000;
+  transition: width .25s var(--admin-sidebar-ease), transform .28s var(--admin-sidebar-ease);
+}
+.admin-sidebar.collapsed { width: var(--admin-sidebar-mini); }
+
+.admin-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 16px;
+  min-height: 64px;
+  border-bottom: 1px solid var(--hw-border);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.admin-sidebar.collapsed .admin-sidebar-brand {
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 8px;
+  min-height: 96px;
+}
+.admin-brand-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--admin-brand);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -.08em;
+}
+.admin-brand-logo i { font-size: 15px; }
+.admin-brand-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-sidebar.collapsed .admin-brand-name { display: none; }
+
+.admin-collapse-btn {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .25s, background .15s;
+  flex-shrink: 0;
+}
+.admin-collapse-btn:hover { background: var(--admin-bg-input); }
+.admin-sidebar.collapsed .admin-collapse-btn {
+  margin-left: 0;
+  transform: rotate(180deg);
+}
+
+.admin-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--admin-radius-btn);
+  background: transparent;
+  color: var(--admin-text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: 15px;
+  transition: background .15s, color .15s;
+}
+.admin-nav-item i { width: 18px; text-align: center; flex-shrink: 0; }
+.admin-nav-item:hover { background: var(--admin-bg-input); color: var(--admin-text-primary); }
+.admin-nav-item.active { background: var(--admin-brand); color: #fff; font-weight: 600; }
+.admin-sidebar.collapsed .admin-nav-item { justify-content: center; padding: 10px 0; }
+.admin-sidebar.collapsed .admin-nav-text { display: none; }
+
+.admin-sidebar-foot {
+  padding: 10px 8px;
+  border-top: 1px solid var(--hw-border);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.admin-sidebar-theme { width: 100%; }
+.theme-switch--sidebar { display: block; width: 100%; }
+.theme-switch--sidebar .theme-toggle {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--admin-radius-btn);
+  font-size: 15px;
+  color: var(--admin-text-secondary);
+}
+.theme-switch--sidebar .theme-toggle i {
+  width: 18px;
+  text-align: center;
+  font-size: 15px;
+}
+.theme-switch--sidebar .theme-toggle:hover {
+  background: var(--admin-bg-input);
+  color: var(--admin-text-primary);
+}
+.admin-sidebar.collapsed .theme-switch--sidebar .theme-toggle {
+  justify-content: center;
+  padding: 10px 0;
+}
+.admin-sidebar .theme-menu {
+  top: auto;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: auto;
+  min-width: 140px;
+}
+.admin-sidebar.collapsed .theme-menu {
+  top: auto;
+  bottom: 0;
+  left: calc(100% + 8px);
+  right: auto;
+}
+.admin-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--admin-radius-btn);
+  color: var(--admin-text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: 15px;
+  transition: background .15s, color .15s;
+}
+.admin-sidebar-link i { width: 18px; text-align: center; flex-shrink: 0; }
+.admin-sidebar-link:hover {
+  background: var(--admin-bg-input);
+  color: var(--admin-text-primary);
+}
+.admin-sidebar.collapsed .admin-sidebar-link {
+  justify-content: center;
+  padding: 10px 0;
+}
+.admin-sidebar-logout { margin: 0; }
+.admin-sidebar-logout button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--admin-radius-btn);
+  background: transparent;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  font-size: 15px;
+  transition: background .15s, color .15s;
+}
+.admin-sidebar-logout button i { width: 18px; text-align: center; flex-shrink: 0; }
+.admin-sidebar-logout button:hover {
+  background: color-mix(in srgb, var(--admin-danger) 10%, transparent);
+  color: var(--admin-danger);
+}
+.admin-sidebar.collapsed .admin-sidebar-logout button { justify-content: center; padding: 10px 0; }
+
+.admin-main {
+  margin-left: var(--admin-sidebar-w);
+  min-height: 100vh;
+  transition: margin-left .25s var(--admin-sidebar-ease);
+}
+.admin-sidebar.collapsed ~ .admin-main { margin-left: var(--admin-sidebar-mini); }
+.admin-main .admin-container {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.admin-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .4);
+  z-index: 900;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .25s, visibility .25s;
+}
+.admin-mask.show { opacity: 1; visibility: visible; }
+
+.admin-mobile-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: var(--admin-radius-btn);
+  background: var(--admin-bg-input);
+  color: var(--admin-text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .admin-sidebar {
+    width: 240px !important;
+    transform: translateX(-100%);
+    box-shadow: 14px 0 34px rgba(0, 0, 0, .14);
+  }
+  .admin-sidebar.mobile-open { transform: translateX(0); }
+
+  .admin-sidebar.collapsed .admin-sidebar-brand {
+    flex-direction: row;
+    gap: 10px;
+    padding: 18px 16px;
+    min-height: 64px;
+  }
+  .admin-sidebar.collapsed .admin-brand-name { display: block; }
+  .admin-sidebar.collapsed .admin-collapse-btn {
+    margin-left: auto;
+    transform: none;
+  }
+  .admin-sidebar.collapsed .admin-nav-item {
+    justify-content: flex-start;
+    padding: 10px 12px;
+  }
+  .admin-sidebar.collapsed .admin-nav-text { display: block; }
+  .admin-sidebar.collapsed .admin-sidebar-logout button {
+    justify-content: flex-start;
+    padding: 10px 12px;
+  }
+  .admin-collapse-btn { display: none; }
+
+  .admin-main { margin-left: 0 !important; }
+  .admin-main .admin-container {
+    max-width: 100%;
+    margin: 16px auto;
+  }
+  .admin-mobile-toggle { display: inline-flex; }
+
+  .admin-header:has(.admin-mobile-toggle) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+  }
+  .admin-header:has(.admin-mobile-toggle) h1 {
+    min-width: 0;
+    font-size: 1.35rem;
+  }
+  .admin-header:has(.admin-mobile-toggle) .header-actions {
+    margin-left: 0;
+    justify-self: end;
+    flex-wrap: nowrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-sidebar.collapsed .theme-menu {
+    top: auto;
+    bottom: calc(100% + 8px);
+    left: 0;
+    right: auto;
   }
 }

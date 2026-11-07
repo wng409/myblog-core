@@ -1,0 +1,6 @@
+<%- include('./admin-sidebar', {
+  active: (typeof active !== 'undefined' ? active : ''),
+  csrfToken: (typeof csrfToken !== 'undefined' ? csrfToken : '')
+}) %>
+<div class="admin-mask" id="adminSidebarMask"></div>
+<main class="admin-main">

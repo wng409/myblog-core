@@ -123,12 +123,7 @@
 
   if (searchInput) searchInput.addEventListener('input', applySearchFilter);
 
-  // 刷新按钮：用户主动整页刷新
-  var refreshBtn = document.getElementById('logRefreshBtn');
-  if (refreshBtn) refreshBtn.addEventListener('click', function () { location.reload(); });
-
-  // 说明：core（开源版）不提供 SSE 接口，故此处不建立 EventSource 连接；
-  // 刷新通过工具栏的「刷新」按钮整页重载完成。
+  // 说明：core（开源版）不提供 SSE 接口，列表更新依赖整页刷新。
 
   // ==================== 初始化 ====================
   fillUA();

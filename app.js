@@ -346,6 +346,11 @@ app.use(session({
 
 app.use((req, res, next) => {
   res.locals.currentUser = (req.session && req.session.user) || null;
+  // 侧边栏折叠状态：由 cookie 在首屏直接渲染，避免导航后先展开再收起
+  res.locals.adminSidebarCollapsed = (req.headers.cookie || '')
+    .split(';')
+    .map(function (part) { return part.trim(); })
+    .some(function (part) { return part === 'admin_sidebar_collapsed=1'; });
   res.locals.lang = currentLang;
   res.locals.t = (key) => i18n.t(currentLang, key);
   res.locals.settings = siteSettings;

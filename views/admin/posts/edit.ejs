@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="/css/easymde.min.css">
 </head>
 <body>
+  <%- include('../../partials/admin-shell-start', { active: 'dashboard', csrfToken }) %>
   <div class="admin-container">
     <div class="admin-header">
       <h1><%= post ? t('posts.editor.edit') : t('posts.editor.new') %></h1>
@@ -69,6 +70,7 @@
       </div>
     </form>
   </div>
+  <%- include('../../partials/admin-shell-end') %>
   <script src="/js/easymde.min.js"></script>
   <script src="/js/admin-editor.js"></script>
 </body>
