@@ -41,8 +41,8 @@
     <div class="admin-sidebar-theme">
       <%- include('./theme-switch', { variant: 'sidebar', id: 'themeToggleAdmin' }) %>
     </div>
-    <a href="/" class="admin-sidebar-link">
-      <i class="fas fa-code"></i><span class="admin-nav-text"><%= t('admin.viewSite') %></span>
+    <a href="/" class="admin-sidebar-link" title="<%= t('admin.backHome') %>">
+      <i class="fas fa-arrow-left"></i><span class="admin-nav-text"><%= t('admin.backHome') %></span>
     </a>
     <form method="POST" action="/admin/logout" class="admin-sidebar-logout">
       <input type="hidden" name="_csrf" value="<%= _sbCsrf %>">
