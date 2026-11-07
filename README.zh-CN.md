@@ -82,12 +82,14 @@
 - 移动端适配 + 深色模式（跟随系统 / 浅色 / 深色）
 
 **后台（单管理员账号）**
+- 侧边栏导航：240px 固定侧边栏，桌面折叠为 64px 仅图标，移动端抽屉；当前菜单高亮；底部主题切换与返回首页
 - 文章管理：新建 / 编辑 / 删除，支持本地上传或外链封面
 - 回收站：软删除、恢复、彻底删除、清空、孤儿图片清理
 - 首页管理：Banner 轮播（卡片式列表；移动端点击条目展开底部抽屉，含图片实时预览与纵向排布的编辑项）与推荐文章配置
 - 操作日志：登录、文章、设置等操作留痕，支持筛选与分页
 - 个人资料：修改用户名（含内置 `admin` 账号）与密码
 - 多语言切换：在「首页设置」中切换前台语言（简体中文 / English / 文言文 / 火星文）
+- 静态导出：`npm run export` 通过 `scripts/export.js` 生成公开的 `dist/` 静态站
 
 ## 技术栈
 
@@ -102,20 +104,30 @@
 | 上传 | multer |
 | 会话 | express-session + session-file-store |
 | 安全 | helmet + csurf + express-rate-limit + DOMPurify |
+| 静态导出 | `scripts/export.js` + EJS |
 
 ## 目录结构
 
 ```text
 myblog-core/
 |-- app.js                 # 应用入口：路由 + 中间件
+|-- scripts/
+|   |-- export.js          # SSG 静态导出（仅公开资产）
 |-- lib/
 |   |-- users.js           # 账号、鉴权、日志、错误页
-|-- public/                # 静态资源（css / js / uploads）
+|   |-- i18n/              # 简体中文 / English / 文言文 / 火星文词典
+|-- public/                # 静态资源
+|   |-- css/{style.css,admin.css,all.min.css,easymde.min.css}
+|   |-- js/{main.js,theme.js,posts.js,static-search.js,toast.js,
+|   |        admin-sidebar.js,admin-ui.js,admin-settings.js,
+|   |        admin-logs.js,admin-editor.js,login.js,easymde.min.js}
+|   |-- uploads/           # 运行时上传目录
 |-- views/                 # EJS 模板
 |   |-- layouts/           # 前台布局
-|   |-- partials/          # 主题、后台导航等片段
+|   |-- partials/          # theme-init / theme-switch / brand-color /
+|   |                      # admin-sidebar / admin-shell-start / admin-shell-end
 |   |-- posts/             # 文章列表 / 详情
-|   |-- admin/             # 后台页面
+|   |-- admin/             # login / dashboard / posts / settings / site / profile / logs
 |-- db/                    # SQLite 数据库（运行时自动创建）
 |-- sessions/              # 会话文件（运行时自动创建）
 |-- .env.example           # 环境变量示例

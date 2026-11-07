@@ -25,6 +25,7 @@
 | Capability | This Repo (core, MIT) | Complete Version (Private, Proprietary) |
 | --- | :---: | :---: |
 | Frontend display + Article system | Yes | Yes |
+| Static site export (SSG) | Yes | Yes |
 | Admin Panel (Single Administrator) | Yes | Yes |
 | Markdown writing + Image upload | Yes | Yes |
 | Dark mode / Mobile adaptation | Yes | Yes |
@@ -82,12 +83,14 @@ In an era where deploying a blog often requires going to the cloud, buying DDoS 
 - Mobile adaptation + Dark mode (Follows system / Light / Dark)
 
 **Admin Panel (Single Administrator)**
+- Sidebar navigation: 240px fixed sidebar, 64px icon-only collapse on desktop, mobile drawer; active item highlight; theme switch and Back to Home at the bottom
 - Article management: Create / Edit / Delete, supports local upload or external image URL
 - Recycle Bin: Soft delete, restore, permanent delete, empty, orphan image cleanup
 - Homepage settings: Banner carousel (card list on desktop; on mobile, tap an item to open a bottom sheet with a live image preview and vertically stacked fields) and featured posts configuration
 - Operation logs: Login, article, settings operations traced, supports filtering and pagination
 - Profile: Modify username (including the built-in `admin` account) and password
 - Internationalization: Switch the site language (Simplified Chinese / English / Classical Chinese / Martian) in Homepage settings
+- Static export: `npm run export` renders a public `dist/` site from `scripts/export.js`
 
 ## Tech Stack
 
@@ -102,20 +105,30 @@ In an era where deploying a blog often requires going to the cloud, buying DDoS 
 | Upload | multer |
 | Session | express-session + session-file-store |
 | Security | helmet + csurf + express-rate-limit + DOMPurify |
+| Static export | `scripts/export.js` + EJS |
 
 ## Directory Structure
 
 ```text
 myblog-core/
 |-- app.js                 # App entry: Routes + Middleware
+|-- scripts/
+|   |-- export.js          # SSG static export (public assets only)
 |-- lib/
 |   |-- users.js           # Accounts, Auth, Logs, Error pages
-|-- public/                # Static resources (css / js / uploads)
+|   |-- i18n/              # zh / en / classical / mars dictionaries
+|-- public/                # Static resources
+|   |-- css/{style.css,admin.css,all.min.css,easymde.min.css}
+|   |-- js/{main.js,theme.js,posts.js,static-search.js,toast.js,
+|   |        admin-sidebar.js,admin-ui.js,admin-settings.js,
+|   |        admin-logs.js,admin-editor.js,login.js,easymde.min.js}
+|   |-- uploads/           # Runtime uploads
 |-- views/                 # EJS templates
 |   |-- layouts/           # Frontend layouts
-|   |-- partials/          # Themes, admin nav, etc.
+|   |-- partials/          # theme-init / theme-switch / brand-color /
+|   |                      # admin-sidebar / admin-shell-start / admin-shell-end
 |   |-- posts/             # Post list / detail
-|   |-- admin/             # Admin pages
+|   |-- admin/             # login / dashboard / posts / settings / site / profile / logs
 |-- db/                    # SQLite DB (auto-created at runtime)
 |-- sessions/              # Session files (auto-created at runtime)
 |-- .env.example           # Env variable example
