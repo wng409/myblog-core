@@ -55,16 +55,14 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   if (searchBtn) searchBtn.addEventListener('click', doSearch);
 
-  // 通用确认框
-  document.querySelectorAll('form[data-confirm]').forEach(form => {
-    form.addEventListener('submit', function (e) {
-      if (!confirm(form.dataset.confirm)) e.preventDefault();
-    });
-  });
-  document.querySelectorAll('button[data-confirm], a[data-confirm]').forEach(el => {
-    el.addEventListener('click', function (e) {
-      if (!confirm(el.dataset.confirm)) e.preventDefault();
-    });
+  // 通用确认框：交由 hm-ui.js 的全局事件委托接管（form / button[data-confirm]）
+  // 首页 / 详情页标签胶囊：span 嵌在文章卡片链接内，需要阻止冒泡后单独跳转
+  document.addEventListener('click', function (e) {
+    const tag = e.target && e.target.closest ? e.target.closest('.js-tag-click') : null;
+    if (!tag) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (tag.dataset.href) window.location.href = tag.dataset.href;
   });
 });
 

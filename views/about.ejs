@@ -1,0 +1,68 @@
+<section class="about-wrapper">
+
+  <!-- 左侧名片：内容全部来自站点设置 -->
+  <aside class="about-card-left">
+    <% if (about.avatar) { %>
+      <img class="about-avatar" src="<%= about.avatar %>" alt="<%= t('about.avatarAlt') %>">
+    <% } %>
+
+    <% if (about.name) { %>
+      <h1 class="about-name"><%= about.name %></h1>
+    <% } %>
+    <% if (about.title) { %>
+      <span class="about-title"><%= about.title %></span>
+    <% } %>
+
+    <% if (about.social && about.social.length) { %>
+      <div class="about-social-links">
+        <% about.social.forEach(function (it) { %>
+          <a href="<%= it.type === 'email' ? (/^mailto:/.test(it.url) ? it.url : 'mailto:' + it.url) : it.url %>"
+             target="_blank" rel="noopener" aria-label="<%= locals.socialLabels[it.type] || it.type %>">
+            <i class="<%= locals.socialIcons[it.type] || 'fas fa-link' %>" aria-hidden="true"></i>
+          </a>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <% if (about.email) { %>
+      <div class="about-contact-email"><%= about.email %></div>
+    <% } %>
+  </aside>
+
+  <!-- 右侧内容 -->
+  <main class="about-card-right">
+
+    <% if (about.text) { %>
+      <h2 class="about-section-title"><%= t('about.intro') %></h2>
+      <p style="white-space: pre-wrap;"><%= about.text %></p>
+    <% } %>
+
+    <% if (about.tech && about.tech.length) { %>
+      <h2 class="about-section-title"><%= t('about.tech') %></h2>
+      <div class="tech-stack">
+        <% about.tech.forEach(function (tech) { %>
+          <span class="tag-pill"><%= tech %></span>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <% if (about.history && about.history.length) { %>
+      <h2 class="about-section-title"><%= t('about.history') %></h2>
+      <div class="history-list">
+        <% about.history.forEach(function (item) { %>
+          <div class="history-item">
+            <% if (item.date) { %><span class="history-date"><%= item.date %></span><% } %>
+            <% if (item.title) { %><div class="history-title"><%= item.title %></div><% } %>
+            <% if (item.desc) { %><div class="history-desc"><%= item.desc %></div><% } %>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <% if (!about.text && (!about.tech || !about.tech.length) && (!about.history || !about.history.length)) { %>
+      <p class="about-empty"><%= t('about.empty') %></p>
+    <% } %>
+
+  </main>
+
+</section>

@@ -8,6 +8,8 @@
   <title><%= locals.titleKey ? t(locals.titleKey) + ' · ' + SITE_TITLE : (locals.title ? locals.title + ' · ' + SITE_TITLE : SITE_TITLE) %></title>
   <link rel="stylesheet" href="/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/site-v5.css">
+  <link rel="stylesheet" href="/css/hm-ui.css">
   <link rel="icon" href="<%= (locals.settings && locals.settings.site_logo) || '/favicon.svg' %>">
   <%- include('../partials/brand-color') %>
 </head>
@@ -28,7 +30,7 @@
     <nav class="pc-nav">
       <a href="/"><%= t('nav.home') %></a>
       <a href="<%= locals.isStatic ? '/posts.html' : '/posts' %>"><%= t('nav.posts') %></a>
-      <a href="/#about"><%= t('nav.about') %></a>
+<a href="<%= locals.isStatic ? '/about.html' : '/about' %>"><%= t('nav.about') %></a>
     </nav>
 
     <div class="nav-right">
@@ -62,7 +64,7 @@
     <ul class="mobile-menu-list">
       <li><a href="/"><%= t('nav.home') %><span class="arrow">›</span></a></li>
       <li><a href="<%= locals.isStatic ? '/posts.html' : '/posts' %>"><%= t('nav.posts') %><span class="arrow">›</span></a></li>
-      <li><a href="/#about"><%= t('nav.about') %><span class="arrow">›</span></a></li>
+      <li><a href="<%= locals.isStatic ? '/about.html' : '/about' %>"><%= t('nav.about') %><span class="arrow">›</span></a></li>
     </ul>
 
     <div class="mobile-menu-footer">
@@ -93,7 +95,7 @@
             <li><a href="<%= locals.isStatic ? '/posts.html' : '/posts' %>"><%= t('nav.posts') %></a></li>
             <li><a href="/#featured"><%= t('footer.featured') %></a></li>
             <li><a href="/#latest"><%= t('footer.latest') %></a></li>
-            <li><a href="/#about"><%= t('nav.about') %></a></li>
+            <li><a href="<%= locals.isStatic ? '/about.html' : '/about' %>"><%= t('nav.about') %></a></li>
           </ul>
         </div>
         <div class="footer-column">
@@ -122,5 +124,6 @@
   </footer>
 
   <script src="/js/main.js"></script>
+  <script src="/js/hm-ui.js"></script>
 </body>
 </html>

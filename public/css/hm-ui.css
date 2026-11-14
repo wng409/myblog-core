@@ -1,0 +1,307 @@
+/* ============================================================
+   HarmonyOS 提示语义色（设计令牌）
+   ============================================================ */
+:root {
+  --hm-bg-base: #f1f3f5;
+  --hm-bg-card: #ffffff;
+  --hm-text-primary: #182431;
+  --hm-text-secondary: #666666;
+
+  --hm-danger: #e84026;
+  --hm-danger-bg: #fde8e6;
+  --hm-danger-text: #c0392b;
+
+  --hm-warning: #ed6f21;
+  --hm-warning-bg: #fef0e6;
+  --hm-warning-text: #b85c1a;
+
+  --hm-success: #64bb5c;
+  --hm-success-bg: #eef7ec;
+  --hm-success-text: #3e8e37;
+
+  --hm-primary: #0a59f7;
+  --hm-primary-bg: #e6efff;
+  --hm-primary-text: #0a59f7;
+}
+
+.dark {
+  --hm-bg-base: #000000;
+  --hm-bg-card: #1a1a1a;
+  --hm-text-primary: #e5e5e5;
+  --hm-text-secondary: #999999;
+
+  --hm-danger: #d94838;
+  --hm-danger-bg: #2e1a17;
+  --hm-danger-text: #ff6b52;
+
+  --hm-warning: #db6b42;
+  --hm-warning-bg: #2a1f18;
+  --hm-warning-text: #ffa366;
+
+  --hm-success: #5ba854;
+  --hm-success-bg: #17221a;
+  --hm-success-text: #7dcc75;
+
+  --hm-primary: #317af7;
+  --hm-primary-bg: #1a2438;
+  --hm-primary-text: #5291ff;
+}
+
+/* ============================================================
+   鸿蒙风格全局弹窗（hm-ui.js）
+   ============================================================ */
+.hm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.28s;
+}
+
+.hm-modal.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.hm-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+html.dark .hm-modal-overlay {
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.hm-modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  padding: 24px;
+  box-sizing: border-box;
+  background: var(--hm-bg-card, #fff);
+  color: var(--hm-text-primary, #182431);
+  border: 1px solid var(--border, #e6e6e6);
+  border-radius: 24px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  transform: scale(0.92) translateY(18px);
+  transition: transform 0.34s cubic-bezier(0.2, 0.8, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.hm-modal.active .hm-modal-content {
+  transform: scale(1) translateY(0);
+}
+
+.hm-modal-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 20px;
+}
+
+.hm-modal-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.hm-icon-primary {
+  background: var(--hm-primary-bg);
+  color: var(--hm-primary-text);
+}
+
+.hm-icon-success {
+  background: var(--hm-success-bg);
+  color: var(--hm-success-text);
+}
+
+.hm-icon-caution {
+  background: var(--hm-warning-bg);
+  color: var(--hm-warning-text);
+}
+
+.hm-icon-danger {
+  background: var(--hm-danger-bg);
+  color: var(--hm-danger-text);
+}
+
+.hm-modal-note {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  text-align: left;
+  border: 1px solid transparent;
+}
+
+.hm-note-danger {
+  background: var(--hm-danger-bg);
+  color: var(--hm-danger-text);
+  border-color: color-mix(in srgb, var(--hm-danger) 28%, transparent);
+}
+
+.hm-note-caution {
+  background: var(--hm-warning-bg);
+  color: var(--hm-warning-text);
+  border-color: color-mix(in srgb, var(--hm-warning) 28%, transparent);
+}
+
+.hm-modal-title {
+  margin: 0 0 12px;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--hm-text-primary, #182431);
+}
+
+.hm-modal-desc {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  text-align: center;
+  color: var(--hm-text-secondary, #666);
+  word-break: break-word;
+}
+
+.hm-modal-url {
+  margin-top: 16px;
+  padding: 10px 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: left;
+  color: var(--hm-text-secondary, #666);
+  background: var(--hm-bg-base, #f1f3f5);
+  border: 1px solid var(--border, #e6e6e6);
+  border-radius: 12px;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.hm-modal-actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.hm-modal-actions[data-count="3"],
+.hm-modal-actions[data-count="4"],
+.hm-modal-actions[data-count="5"],
+.hm-modal-actions[data-count="6"] {
+  flex-direction: column;
+}
+
+.hm-modal-actions .hm-btn {
+  flex: 1 1 auto;
+  min-width: 104px;
+  min-height: 46px;
+  padding: 12px 14px;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: inherit;
+  line-height: 1.2;
+  border: none;
+  border-radius: 23px;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.12s ease, background-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hm-modal-actions .hm-btn:active {
+  transform: scale(0.97);
+}
+
+.hm-modal-actions .hm-btn:focus-visible {
+  outline: 2px solid var(--hm-text-primary, #182431);
+  outline-offset: 2px;
+}
+
+.hm-btn-cancel {
+  background: var(--hm-bg-base, #f1f3f5);
+  color: var(--hm-text-primary, #182431);
+}
+
+.hm-btn-cancel:hover {
+  background: color-mix(in srgb, var(--hm-text-primary, #182431) 8%, var(--hm-bg-base, #f1f3f5));
+}
+
+.hm-btn-primary {
+  background: var(--hm-primary, #0a59f7);
+  color: #fff;
+}
+
+.hm-btn-primary:hover {
+  opacity: 0.88;
+}
+
+.hm-btn-danger {
+  background: var(--hm-danger, #e84026);
+  color: #fff;
+}
+
+.hm-btn-danger:hover {
+  opacity: 0.88;
+}
+
+.hm-btn-caution {
+  background: var(--hm-warning, #ed6f21);
+  color: #fff;
+}
+
+.hm-btn-caution:hover {
+  opacity: 0.88;
+}
+
+.hm-btn-success {
+  background: var(--hm-success, #64bb5c);
+  color: #fff;
+}
+
+.hm-btn-success:hover {
+  opacity: 0.88;
+}
+
+@media (max-width: 380px) {
+  .hm-modal-content {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .hm-modal-title {
+    font-size: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-modal,
+  .hm-modal-content,
+  .hm-modal-actions .hm-btn {
+    transition: none !important;
+  }
+}

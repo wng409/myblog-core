@@ -9,6 +9,7 @@ const MarkdownIt = require('markdown-it');
 const md = new MarkdownIt({ html: false, linkify: true });
 const expressLayouts = require('express-ejs-layouts');
 const users = require('./lib/users');
+const { normalizeTags, parseTags, escapeLike } = require('./lib/tags');
 // 用于时间侧信道防御的假哈希：启动时计算一次即可，
 // 绝不能放进路由内每次生成（一次 scrypt 约 50ms，会造成 CPU DoS）
 const DUMMY_PASSWORD_HASH = users.hashPassword('dummy_password_for_timing_protection');
@@ -114,6 +115,11 @@ db.serialize(() => {
     ['about_avatar', "TEXT DEFAULT ''"],
     ['about_github', "TEXT DEFAULT ''"],
     ['about_email', "TEXT DEFAULT ''"],
+    ['about_name', "TEXT DEFAULT ''"],
+    ['about_title', "TEXT DEFAULT ''"],
+    ['about_text', "TEXT DEFAULT ''"],
+    ['about_tech', "TEXT DEFAULT ''"],
+    ['about_history', "TEXT DEFAULT '[]'"],
     ['social_links', "TEXT DEFAULT '[]'"]
   ].forEach(([col, def]) => {
     db.run(`ALTER TABLE settings ADD COLUMN ${col} ${def}`, (err) => {
@@ -135,7 +141,7 @@ users.initUserTables(db);
 // 站点个性化设置（启动加载；后台保存后调用 loadSiteSettings 刷新）
 let siteSettings = {};
 function loadSiteSettings(cb) {
-  db.get('SELECT site_lang, site_title, site_subtitle, theme_color, about_bio, about_github, about_email, social_links, footer_text, footer_subtitle, site_logo, about_avatar FROM settings WHERE id = 1', (err, row) => {
+  db.get('SELECT site_lang, site_title, site_subtitle, theme_color, about_bio, about_github, about_email, about_name, about_title, about_text, about_tech, about_history, social_links, footer_text, footer_subtitle, site_logo, about_avatar FROM settings WHERE id = 1', (err, row) => {
     siteSettings = row || {};
     // social_links 解析为数组供模板遍历（存储仍为 JSON 字符串）
     siteSettings.social_links = safeParseJson(siteSettings.social_links);
@@ -553,7 +559,7 @@ const getAllTags = (cb) => {
     if (err) return cb(err);
     const tagSet = new Set();
     rows.forEach(row => {
-      if (row.tags) row.tags.split(',').forEach(t => tagSet.add(t.trim()));
+      parseTags(row.tags).forEach(t => tagSet.add(t));
     });
     cb(null, Array.from(tagSet));
   });
@@ -580,14 +586,29 @@ app.get('/', (req, res) => {
       if (err) featuredPosts = [];
       db.all(`SELECT ${POST_LIST_FIELDS} FROM posts WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT 10`, (err, latestPosts) => {
         if (err) latestPosts = [];
+        latestPosts.forEach(p => { p.tagList = parseTags(p.tags); });
 
         const finish = (bannerPosts) => {
-          res.render('index', {
-            titleKey: 'nav.home',
-            bannerPosts,
-            featuredPosts,
-            latestPosts,
-            darkMode: (req.session && req.session.darkMode) || false
+          db.get('SELECT COUNT(*) AS total FROM posts WHERE deleted_at IS NULL', (err2, statRow) => {
+            if (err2) statRow = { total: 0 };
+            db.all('SELECT tags FROM posts WHERE deleted_at IS NULL', (err3, tagRows) => {
+              const counter = new Map();
+              (tagRows || []).forEach(row => {
+                parseTags(row.tags).forEach(t => counter.set(t, (counter.get(t) || 0) + 1));
+              });
+              const tagStats = Array.from(counter, ([name, count]) => ({ name, count }))
+                .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+
+              res.render('index', {
+                titleKey: 'nav.home',
+                bannerPosts,
+                featuredPosts,
+                latestPosts,
+                stats: { posts: statRow ? statRow.total : 0, tags: counter.size },
+                tagStats,
+                darkMode: (req.session && req.session.darkMode) || false
+              });
+            });
           });
         };
 
@@ -627,7 +648,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/posts', (req, res) => {
-  const tag = req.query.tag || '';
+  const tag = normalizeTags(req.query.tag || '');
   const search = req.query.search || '';
   const sort = req.query.sort || 'desc';
 
@@ -638,7 +659,11 @@ app.get('/posts', (req, res) => {
 
   let whereSql = ' WHERE deleted_at IS NULL';
   const params = [];
-  if (tag) { whereSql += ' AND tags LIKE ?'; params.push(`%${tag}%`); }
+  if (tag) {
+    // 边界匹配：',vue,' 不会误命中 ',vuepress,'
+    whereSql += " AND (',' || tags || ',') LIKE ? ESCAPE '\\'";
+    params.push(`%,${escapeLike(tag)},%`);
+  }
   if (search) { whereSql += ' AND (title LIKE ? OR content LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
 
   // 1) 先查总数，算总页数
@@ -652,6 +677,7 @@ app.get('/posts', (req, res) => {
                  ORDER BY created_at ${sort === 'asc' ? 'ASC' : 'DESC'} LIMIT ? OFFSET ?`;
     db.all(sql, [...params, limit, offset], (err, posts) => {
       if (err) return res.status(500).send(users.errorPage({ status: 500, title: i18n.t(currentLang, 'error.500.title'), message: i18n.t(currentLang, 'error.500.message'), lang: currentLang }));
+      posts.forEach(p => { p.tagList = parseTags(p.tags); });
       getAllTags((err, tags) => {
         if (err) tags = [];
         res.render('posts/list', {
@@ -669,6 +695,7 @@ app.get('/posts/:slug', (req, res) => {
   getPostBySlug(req.params.slug, (err, post) => {
     if (err || !post) return res.status(404).send(users.errorPage({ status: 404, title: i18n.t(currentLang, 'error.404.title'), message: i18n.t(currentLang, 'error.404.message'), lang: currentLang }));
     post.htmlContent = renderMarkdownCached(post.content, post.updated_at, post.slug);
+    post.tagList = parseTags(post.tags);
     getAllTags((err, tags) => {
       if (err) tags = [];
       res.render('posts/detail', {
@@ -676,6 +703,24 @@ app.get('/posts/:slug', (req, res) => {
         darkMode: (req.session && req.session.darkMode) || false
       });
     });
+  });
+});
+
+// 关于我（独立页面，内容全部来自 settings，不含任何硬编码个人信息）
+app.get('/about', (req, res) => {
+  res.render('about', {
+    titleKey: 'nav.about',
+    about: {
+      name: siteSettings.about_name || siteSettings.site_title || '',
+      title: siteSettings.about_title || '',
+      text: siteSettings.about_text || siteSettings.about_bio || '',
+      tech: parseTags(siteSettings.about_tech || ''),
+      history: safeParseJson(siteSettings.about_history || '[]'),
+      avatar: siteSettings.about_avatar || '',
+      email: siteSettings.about_email || '',
+      social: siteSettings.social_links || []
+    },
+    darkMode: (req.session && req.session.darkMode) || false
   });
 });
 
@@ -823,18 +868,23 @@ app.get('/admin', authOnly, csrfProtection, (req, res) => {
 // 文章管理
 // ============================================================
 app.get('/admin/posts/new', authOnly, csrfProtection, (req, res) => {
-  res.render('admin/posts/edit', {
-    layout: false, post: null, action: '/admin/posts',
-    csrfToken: req.csrfToken()
+  getAllTags((err, allTags) => {
+    res.render('admin/posts/edit', {
+      layout: false, post: null, action: '/admin/posts',
+      csrfToken: req.csrfToken(), allTags: allTags || []
+    });
   });
 });
 
 app.get('/admin/posts/edit/:id', authOnly, csrfProtection, (req, res) => {
   getPostById(req.params.id, (err, post) => {
     if (err || !post) return res.status(404).send(i18n.t(currentLang, 'posts.err.notFound'));
-    res.render('admin/posts/edit', {
-      layout: false, post, action: `/admin/posts/${post.id}`,
-      csrfToken: req.csrfToken()
+    post.tagList = parseTags(post.tags);
+    getAllTags((err2, allTags) => {
+      res.render('admin/posts/edit', {
+        layout: false, post, action: `/admin/posts/${post.id}`,
+        csrfToken: req.csrfToken(), allTags: allTags || []
+      });
     });
   });
 });
@@ -848,6 +898,7 @@ app.post('/admin/posts', authOnly, upload.single('cover_image'), csrfProtection,
   const finalSlug = slug || (title || '').replace(/\s+/g, '-').toLowerCase();
   const now = new Date().toISOString();
   const safeBilibili = sanitizeUrl(bilibili_embed);
+  const cleanTags = normalizeTags(tags);
 
   let cover_image = '';
   if (req.file) cover_image = fileUrl(req.file);
@@ -856,7 +907,7 @@ app.post('/admin/posts', authOnly, upload.single('cover_image'), csrfProtection,
   db.run(
     `INSERT INTO posts (title, slug, content, tags, cover_image, bilibili_embed, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [title, finalSlug, content, tags, cover_image, safeBilibili, now, now],
+    [title, finalSlug, content, cleanTags, cover_image, safeBilibili, now, now],
     function(err) {
       if (err) return res.status(500).send(i18n.t(currentLang, 'posts.err.saveFailed') + err.message);
       logAction(req, 'create_post', `post:${this.lastID}`);
@@ -877,6 +928,7 @@ app.post('/admin/posts/:id', authOnly, upload.single('cover_image'), csrfProtect
     const finalSlug = slug || (title || '').replace(/\s+/g, '-').toLowerCase();
     const now = new Date().toISOString();
     const safeBilibili = sanitizeUrl(bilibili_embed);
+    const cleanTags = normalizeTags(tags);
 
     let newCover = sanitizeUrl(existing_cover);
     if (req.file) newCover = fileUrl(req.file);
@@ -884,7 +936,7 @@ app.post('/admin/posts/:id', authOnly, upload.single('cover_image'), csrfProtect
 
     db.run(
       `UPDATE posts SET title=?, slug=?, content=?, tags=?, cover_image=?, bilibili_embed=?, updated_at=? WHERE id=? AND deleted_at IS NULL`,
-      [title, finalSlug, content, tags, newCover, safeBilibili, now, req.params.id],
+      [title, finalSlug, content, cleanTags, newCover, safeBilibili, now, req.params.id],
       function(err) {
         if (err) return res.status(500).send(i18n.t(currentLang, 'posts.err.updateFailed') + err.message);
         logAction(req, 'update_post', `post:${req.params.id}`);
@@ -1011,8 +1063,13 @@ app.get('/admin/settings', authOnly, csrfProtection, (req, res) => {
 
 // 站点设置（独立页面：Logo / 主题 / 关于我 / 页脚 / 语言 / 静态导出）
 app.get('/admin/site', authOnly, csrfProtection, (req, res) => {
+  const historyRows = safeParseJson(siteSettings.about_history || '[]');
+  const aboutHistoryText = historyRows
+    .map((it) => [it.date || '', it.title || '', it.desc || ''].join(' | '))
+    .join('\n');
   res.render('admin/site', {
     layout: false, settings: siteSettings, siteLang: currentLang,
+    aboutHistoryText,
     csrfToken: req.csrfToken()
   });
 });
@@ -1039,6 +1096,28 @@ const SITE_FIELD_SETTERS = {
   about_bio:       (v) => String(v == null ? '' : v).trim().slice(0, 1000),
   about_github:    (v) => String(v == null ? '' : v).trim().slice(0, 200),
   about_email:     (v) => String(v == null ? '' : v).trim().slice(0, 200),
+  about_name:      (v) => String(v == null ? '' : v).trim().slice(0, 60),
+  about_title:     (v) => String(v == null ? '' : v).trim().slice(0, 120),
+  about_text:      (v) => String(v == null ? '' : v).trim().slice(0, 4000),
+  about_tech:      (v) => parseTags(String(v == null ? '' : v).slice(0, 500)).slice(0, 24).join(','),
+  // 履历：每行「日期 | 标题 | 描述」，存为 JSON 数组
+  about_history:   (v) => {
+    const rows = String(v == null ? '' : v)
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .slice(0, 12)
+      .map((line) => {
+        const parts = line.split('|').map((s) => s.trim());
+        return {
+          date: (parts[0] || '').slice(0, 40),
+          title: (parts[1] || '').slice(0, 120),
+          desc: (parts.slice(2).join('|') || '').slice(0, 600)
+        };
+      })
+      .filter((it) => it.title || it.desc);
+    return JSON.stringify(rows);
+  },
   // 社交链接：前端提交 JSON 数组（已清洗），此处再校验一次
   social_links:    (v) => {
     try {
@@ -1081,13 +1160,13 @@ app.post('/admin/settings/site', authOnly, csrfProtection, siteFormUpload, (req,
     }
   });
   if (!sets.length) {
-    return res.redirect('/admin/settings?msg=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.msg.siteSaved')));
+    return res.redirect('/admin/site?msg=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.msg.siteSaved')));
   }
   db.run(`UPDATE settings SET ${sets.join(', ')} WHERE id = 1`, vals, function (err) {
-    if (err) return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.err.saveFailed')));
+    if (err) return res.redirect('/admin/site?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.err.saveFailed')));
     loadSiteSettings(() => {
       logAction(req, 'update_settings', 'site');
-      res.redirect('/admin/settings?msg=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.msg.siteSaved')));
+      res.redirect('/admin/site?msg=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.msg.siteSaved')));
     });
   });
 });

@@ -45,11 +45,14 @@
                   <span class="post-card-reading"><i class="far fa-clock"></i> <%= t('posts.readingTime') %><%= Math.ceil((post.content_len || 0) / 300) %><%= t('posts.minutes') %></span>
                 </div>
                 <div class="post-card-tags">
-                  <% if (post.tags) { %>
-                    <% post.tags.split(',').slice(0, 3).forEach(tg => { %>
-                      <span class="post-card-tag"><%= tg.trim() %></span>
-                    <% }) %>
-                  <% } %>
+                  <%
+                    const _cardTags = Array.isArray(post.tagList)
+                      ? post.tagList
+                      : String(post.tags || '').split(',');
+                  %>
+                  <% _cardTags.map(t => String(t || '').trim()).filter(Boolean).slice(0, 3).forEach(tg => { %>
+                    <span class="post-card-tag js-tag-click" data-href="<%= locals.isStatic ? '/posts.html' : '/posts' %>?tag=<%= encodeURIComponent(tg) %>"><%= tg %></span>
+                  <% }) %>
                 </div>
               </div>
             </div>

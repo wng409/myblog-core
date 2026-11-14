@@ -4,74 +4,115 @@
   <%- include('../../partials/theme-init') %>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= post ? t('posts.editor.edit') : t('posts.editor.new') %></title>
+  <title><%= post ? t('posts.editor.edit') : t('posts.editor.new') %> · <%= siteName %></title>
   <link rel="stylesheet" href="/css/all.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/admin.css">
+  <link rel="stylesheet" href="/css/admin-v5.css">
+  <link rel="stylesheet" href="/css/easymde.min.css">
+  <link rel="stylesheet" href="/vendor/tagify.css">
   <%- include('../../partials/brand-color') %>
-  <!-- EasyMDE Markdown 编辑器 -->
-<link rel="stylesheet" href="/css/easymde.min.css">
 </head>
 <body>
   <%- include('../../partials/admin-shell-start', { active: 'dashboard', csrfToken }) %>
-  <div class="admin-container">
-    <div class="admin-header">
+
+  <div class="admin-container ed-page">
+    <header class="ed-header">
       <h1><%= post ? t('posts.editor.edit') : t('posts.editor.new') %></h1>
-      <div class="header-actions">
-        <a href="/admin" class="btn btn-secondary"><%= t('posts.editor.backToList') %></a>
+      <a href="/admin" class="ed-back"><i class="fas fa-arrow-left" aria-hidden="true"></i> <%= t('posts.editor.backToList') %></a>
+    </header>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="form-error" role="alert"><i class="fas fa-exclamation-circle"></i> <%= error %></div>
+    <% } %>
+
+    <main class="ed-card">
+      <form id="postForm"
+            method="POST"
+            action="<%= action %>?_csrf=<%= encodeURIComponent(csrfToken) %>"
+            enctype="multipart/form-data"
+            novalidate>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+        <div class="ed-group">
+          <input type="text" name="title" class="ed-control ed-title"
+                 value="<%= post ? post.title : '' %>"
+                 placeholder="<%= t('posts.editor.titlePlaceholder') %>" autofocus>
+        </div>
+
+        <button type="button" class="ed-slug-trigger" id="slugToggle">
+          <i class="fas fa-link" aria-hidden="true"></i> <%= t('posts.editor.slug') %>
+        </button>
+        <div class="ed-slug-wrapper" id="slugWrapper">
+          <input type="text" name="slug" class="ed-control"
+                 value="<%= post ? post.slug : '' %>"
+                 placeholder="<%= t('posts.editor.slugPlaceholder') %>">
+        </div>
+
+        <div class="ed-group">
+          <label class="ed-label" for="tagInput"><%= t('posts.editor.tags') %></label>
+          <input type="text" name="tags" id="tagInput" class="ed-control"
+                 value="<%= post ? ((post.tagList && post.tagList.length) ? post.tagList.join(',') : post.tags) : '' %>"
+                 placeholder="<%= t('posts.editor.tagsPlaceholder') %>">
+        </div>
+
+        <div class="ed-group">
+          <label class="ed-label"><%= t('posts.editor.cover') %></label>
+          <div class="ed-upload-group">
+            <input type="text" name="cover_image_url" class="ed-control"
+                   placeholder="<%= t('posts.editor.coverUrlPlaceholder') %>">
+            <label class="ed-upload-btn" title="<%= t('posts.editor.uploadCover') %>">
+              <i class="fas fa-upload" aria-hidden="true"></i>
+              <input type="file" name="cover_image" accept="image/jpeg,image/png,image/gif,image/webp">
+            </label>
+          </div>
+          <span class="ed-hint"><%= t('posts.editor.coverHint') %></span>
+          <% if (post && post.cover_image) { %>
+            <div class="current-image">
+              <p><%= t('posts.editor.currentImage') %></p>
+              <img src="<%= post.cover_image %>" alt="cover">
+              <input type="hidden" name="existing_cover" value="<%= post.cover_image %>">
+            </div>
+          <% } %>
+        </div>
+
+        <div class="ed-group">
+          <div class="ed-collapse-header" id="biliToggle" role="button" tabindex="0">
+            <i class="fas fa-chevron-right" aria-hidden="true"></i> <%= t('posts.editor.bilibili') %>
+          </div>
+          <div class="ed-collapse-content" id="biliContent">
+            <input type="text" name="bilibili_embed" class="ed-control"
+                   value="<%= post ? post.bilibili_embed : '' %>"
+                   placeholder="<%= t('posts.editor.bilibiliPlaceholder') %>">
+          </div>
+        </div>
+
+        <div class="ed-group">
+          <label class="ed-label" for="markdown-editor"><%= t('posts.editor.content') %></label>
+          <textarea name="content" id="markdown-editor"><%= post ? post.content : '' %></textarea>
+        </div>
+
+        <script id="tag-data" type="application/json">
+          {
+            "postTags": <%- JSON.stringify(post && post.tagList ? post.tagList : []) %>,
+            "allTags": <%- JSON.stringify(typeof allTags !== 'undefined' && allTags ? allTags : []) %>
+          }
+        </script>
+      </form>
+    </main>
+
+    <div class="ed-actions">
+      <div class="ed-actions-inner">
+        <a href="/admin" class="ed-btn ed-btn-cancel"><%= t('posts.editor.cancel') %></a>
+        <button type="submit" form="postForm" class="ed-btn ed-btn-primary"><%= t('posts.editor.save') %></button>
       </div>
     </div>
-    <form method="POST" action="<%= action %>?_csrf=<%= csrfToken %>" enctype="multipart/form-data">
-      <!-- [修复] CSRF token -->
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-
-      <div class="form-group">
-        <label><%= t('posts.editor.title') %></label>
-        <input type="text" name="title" value="<%= post ? post.title : '' %>" required>
-      </div>
-      <div class="form-group">
-        <label><%= t('posts.editor.slug') %></label>
-        <input type="text" name="slug" value="<%= post ? post.slug : '' %>" placeholder="<%= t('posts.editor.slugPlaceholder') %>">
-      </div>
-      <div class="form-group">
-        <label><%= t('posts.editor.tags') %></label>
-        <input type="text" name="tags" value="<%= post ? post.tags : '' %>" placeholder="<%= t('posts.editor.tagsPlaceholder') %>">
-      </div>
-
-      <!-- ===== 封面图片区域（支持上传文件或输入URL） ===== -->
-      <div class="form-group">
-        <label><%= t('posts.editor.cover') %></label>
-        <div class="file-input-wrapper">
-          <input type="file" name="cover_image" accept="image/jpeg,image/png,image/gif,image/webp">
-          <span class="or-text"><%= t('posts.editor.or') %></span>
-          <input type="text" name="cover_image_url" placeholder="<%= t('posts.editor.coverUrlPlaceholder') %>" style="flex:2; min-width: 250px;">
-        </div>
-        <div class="hint"><%= t('posts.editor.coverHint') %></div>
-        <% if (post && post.cover_image) { %>
-          <div class="current-image">
-            <p><%= t('posts.editor.currentImage') %></p>
-            <img src="<%= post.cover_image %>" alt="cover">
-            <input type="hidden" name="existing_cover" value="<%= post.cover_image %>">
-          </div>
-        <% } %>
-      </div>
-
-      <div class="form-group">
-        <label><%= t('posts.editor.bilibili') %></label>
-        <input type="text" name="bilibili_embed" value="<%= post ? post.bilibili_embed : '' %>" placeholder="<%= t('posts.editor.bilibiliPlaceholder') %>">
-      </div>
-      <div class="form-group">
-        <label><%= t('posts.editor.content') %></label>
-        <textarea name="content" id="markdown-editor"><%= post ? post.content : '' %></textarea>
-      </div>
-      <div class="form-actions form-actions-sticky">
-        <button type="submit" class="btn"><%= t('posts.editor.save') %></button>
-        <a href="/admin" class="btn btn-secondary"><%= t('posts.editor.cancel') %></a>
-      </div>
-    </form>
   </div>
-  <%- include('../../partials/admin-shell-end') %>
+
+  <script src="/vendor/tagify.js"></script>
   <script src="/js/easymde.min.js"></script>
+  <script src="/js/toast.js"></script>
   <script src="/js/admin-editor.js"></script>
+  <%- include('../../partials/admin-shell-end') %>
 </body>
 </html>

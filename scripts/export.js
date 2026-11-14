@@ -27,6 +27,7 @@ const MarkdownIt = require('markdown-it');
 const createDOMPurify = require('dompurify');
 const { JSDOM } = require('jsdom');
 const i18n = require('../lib/i18n');
+const { parseTags } = require('../lib/tags');
 
 // ============================================================
 // 常量
@@ -112,6 +113,7 @@ async function renderBody(view, data) {
     path.join(VIEWS_DIR, view),
     Object.assign({
       isStatic: true, fmtTime, t,
+      siteName: CURRENT_SETTINGS.site_title || SITE_NAME,
       settings: Object.assign({}, CURRENT_SETTINGS, { social_links: SOCIAL_LINKS }),
       socialIcons: SOCIAL_ICONS,
       socialLabels: SOCIAL_LABELS
@@ -178,7 +180,7 @@ async function main() {
     ORDER BY created_at DESC`);
 
   // 2.1 站点个性化设置（标题/副标题/主题色/关于我/页脚），注入模板
-  CURRENT_SETTINGS = (await dbGet(db, 'SELECT site_title, site_subtitle, theme_color, about_bio, about_github, about_email, social_links, footer_text, footer_subtitle, site_logo, about_avatar FROM settings WHERE id = 1')) || {};
+  CURRENT_SETTINGS = (await dbGet(db, 'SELECT site_title, site_subtitle, theme_color, about_bio, about_github, about_email, about_name, about_title, about_text, about_tech, about_history, social_links, footer_text, footer_subtitle, site_logo, about_avatar FROM settings WHERE id = 1')) || {};
   try { const arr = JSON.parse(CURRENT_SETTINGS.social_links || '[]'); SOCIAL_LINKS = Array.isArray(arr) ? arr : []; } catch (e) { SOCIAL_LINKS = []; }
 
   // 3. 生成 dist/api/posts.json（剔除正文大字段，只留搜索所需）
@@ -210,11 +212,22 @@ async function main() {
     title: p.title, image: p.cover_image || '', slug: p.slug
   }));
 
+  const tagCounter = new Map();
+  posts.forEach(p => {
+    parseTags(p.tags).forEach(tag => {
+      tagCounter.set(tag, (tagCounter.get(tag) || 0) + 1);
+    });
+  });
+  const tagStats = Array.from(tagCounter, ([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+
   const indexHtml = await renderPage('index.ejs', {
     titleKey: 'nav.home',
     bannerPosts,
     featuredPosts,
-    latestPosts
+    latestPosts,
+    stats: { posts: posts.length, tags: tagCounter.size },
+    tagStats
   });
   await writeFileSafe(path.join(DIST_DIR, 'index.html'), indexHtml);
   console.log('[OK] dist/index.html 已生成');
@@ -225,7 +238,7 @@ async function main() {
   const allTags = [];
   const tagSet = new Set();
   posts.forEach(p => {
-    if (p.tags) p.tags.split(',').forEach(x => tagSet.add(x.trim()));
+    parseTags(p.tags).forEach(x => tagSet.add(x));
   });
   tagSet.forEach(x => allTags.push(x));
 
@@ -254,13 +267,33 @@ async function main() {
     const html = await renderPage('posts/detail.ejs', {
       title: post.title,
       post: Object.assign({}, post, {
-        htmlContent: renderMarkdown(contentMap[post.slug] || '')
+        htmlContent: renderMarkdown(contentMap[post.slug] || ''),
+        tagList: parseTags(post.tags)
       })
     });
     await writeFileSafe(path.join(DIST_DIR, 'posts', `${slug}.html`), html);
     detailCount++;
   }
   console.log(`[OK] dist/posts/{slug}.html 已生成（${detailCount} 篇）`);
+
+  // 6.1 关于我 about.html（内容来自 settings，无硬编码）
+  let aboutHistory = [];
+  try { aboutHistory = JSON.parse(CURRENT_SETTINGS.about_history || '[]'); } catch (e) { aboutHistory = []; }
+  const aboutHtml = await renderPage('about.ejs', {
+    titleKey: 'nav.about',
+    about: {
+      name: CURRENT_SETTINGS.about_name || CURRENT_SETTINGS.site_title || SITE_NAME,
+      title: CURRENT_SETTINGS.about_title || '',
+      text: CURRENT_SETTINGS.about_text || CURRENT_SETTINGS.about_bio || '',
+      tech: parseTags(CURRENT_SETTINGS.about_tech || ''),
+      history: Array.isArray(aboutHistory) ? aboutHistory : [],
+      avatar: CURRENT_SETTINGS.about_avatar || '',
+      email: CURRENT_SETTINGS.about_email || '',
+      social: SOCIAL_LINKS
+    }
+  });
+  await writeFileSafe(path.join(DIST_DIR, 'about.html'), aboutHtml);
+  console.log('[OK] dist/about.html 已生成');
 
   // 7. 收尾
   db.close();

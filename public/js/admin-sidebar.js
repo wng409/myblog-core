@@ -81,7 +81,15 @@
     var logoutForm = document.querySelector('.admin-sidebar-logout');
     if (logoutForm) {
       logoutForm.addEventListener('submit', function (e) {
-        if (confirmLogoutText && !window.confirm(confirmLogoutText)) e.preventDefault();
+        if (!confirmLogoutText) return;
+        if (typeof window.hmConfirm === 'function') {
+          e.preventDefault();
+          window.hmConfirm(confirmLogoutText, '', { tone: 'caution' }).then(function (ok) {
+            if (ok) logoutForm.submit();
+          });
+        } else if (!window.confirm(confirmLogoutText)) {
+          e.preventDefault();
+        }
       });
     }
   });

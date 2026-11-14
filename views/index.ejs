@@ -1,127 +1,201 @@
-<!-- ========== 1. Banner 轮播（首屏，圆角） ========== -->
-<section class="banner-carousel">
-  <div class="carousel-wrapper">
-    <div class="carousel-track" id="carouselTrack">
+<%
+  const _settings = (typeof settings !== 'undefined' && settings) ? settings : (locals.settings || {});
+  const _stats = (typeof stats !== 'undefined' && stats) ? stats : null;
+  const _static = locals.isStatic;
+  const _postsUrl = _static ? '/posts.html' : '/posts';
+  const _postHref = function (slug) {
+    return _static ? '/posts/' + slug + '.html' : '/posts/' + slug;
+  };
+  const _postTags = function (post) {
+    var list = (post && Array.isArray(post.tagList))
+      ? post.tagList
+      : String((post && post.tags) || '').split(',');
+    return list.map(function (t) { return String(t || '').trim(); })
+      .filter(Boolean).slice(0, 2);
+  };
+  const _tagStats = (typeof tagStats !== 'undefined' && Array.isArray(tagStats)) ? tagStats : [];
+%>
+
+<div class="home-main">
+
+  <% if (_settings.site_subtitle) { %>
+    <h1 class="home-headline"><%= _settings.site_subtitle %></h1>
+  <% } %>
+
+  <div class="home-grid">
+
+    <!-- ================= 左栏 ================= -->
+    <div class="home-left">
+
+      <!-- A. 大 Banner -->
       <% if (bannerPosts && bannerPosts.length > 0) { %>
-        <% bannerPosts.forEach((item, index) => { %>
-          <div class="carousel-slide <%= index === 0 ? 'active' : '' %>">
-            <a href="<%= item.slug !== '#' ? (locals.isStatic ? '/posts/'+item.slug+'.html' : '/posts/'+item.slug) : '#' %>">
-              <div class="slide-image" style="background-image: url('<%= item.image %>');">
-                <div class="slide-overlay">
-                  <h2><%= item.title %></h2>
+        <div class="banner-carousel home-banner">
+          <div class="carousel-wrapper">
+            <div class="carousel-track" id="carouselTrack">
+              <% bannerPosts.forEach((item, index) => { %>
+                <div class="carousel-slide <%= index === 0 ? 'active' : '' %>">
+                  <a href="<%= (item.slug && item.slug !== '#') ? _postHref(item.slug) : '#' %>">
+                    <div class="slide-image" style="background-image: url('<%= item.image || '' %>');">
+                      <div class="slide-overlay">
+                        <h2><%= item.title %></h2>
+                      </div>
+                    </div>
+                  </a>
                 </div>
-              </div>
-            </a>
-          </div>
-        <% }) %>
-      <% } else { %>
-        <div class="carousel-slide active">
-          <div class="slide-image slide-image--empty">
-            <div class="slide-overlay">
-              <h2><%= t('home.banner.empty') %></h2>
+              <% }) %>
+            </div>
+            <button class="carousel-btn prev" id="carouselPrev" type="button" aria-label="<%= t('home.carousel.prev') %>">&#10094;</button>
+            <button class="carousel-btn next" id="carouselNext" type="button" aria-label="<%= t('home.carousel.next') %>">&#10095;</button>
+            <div class="carousel-dots">
+              <% bannerPosts.forEach((_, index) => { %>
+                <span class="dot <%= index === 0 ? 'active' : '' %>" data-index="<%= index %>"></span>
+              <% }) %>
             </div>
           </div>
         </div>
-      <% } %>
-    </div>
-    <button class="carousel-btn prev" id="carouselPrev" type="button" aria-label="<%= t('home.carousel.prev') %>">&#10094;</button>
-    <button class="carousel-btn next" id="carouselNext" type="button" aria-label="<%= t('home.carousel.next') %>">&#10095;</button>
-    <div class="carousel-dots">
-      <% if (bannerPosts && bannerPosts.length > 0) { %>
-        <% bannerPosts.forEach((_, index) => { %>
-          <span class="dot <%= index === 0 ? 'active' : '' %>" data-index="<%= index %>"></span>
-        <% }) %>
-      <% } %>
-    </div>
-  </div>
-</section>
-
-<!-- ========== 2. 推荐文章 ========== -->
-<section class="section section-light" id="featured">
-  <div class="container">
-    <div class="section-title">
-      <h2><%= t('home.featured.title') %></h2>
-      <p><%= t('home.featured.subtitle') %></p>
-    </div>
-    <div class="blog-grid">
-      <% if (featuredPosts && featuredPosts.length > 0) { %>
-        <% featuredPosts.forEach(post => { %>
-          <article class="blog-card">
-            <a href="<%= locals.isStatic ? '/posts/'+post.slug+'.html' : '/posts/'+post.slug %>">
-              <div class="card-image-wrapper">
-                <div class="card-image" style="background-image: url('<%= post.cover_image %>');"></div>
-              </div>
-              <div class="card-content">
-                <div class="card-meta"><%= new Date(post.created_at).toISOString().slice(0,10) %></div>
-                <h3><%= post.title %></h3>
-              </div>
-            </a>
-          </article>
-        <% }) %>
       <% } else { %>
-        <p class="empty-hint"><%= t('home.featured.empty') %></p>
-      <% } %>
-    </div>
-  </div>
-</section>
-
-<!-- ========== 3. 最新文章 ========== -->
-<section class="section section-gray" id="latest">
-  <div class="container">
-    <div class="section-title">
-      <h2><%= t('home.latest.title') %></h2>
-      <p><%= t('home.latest.subtitle') %></p>
-    </div>
-    <div class="blog-grid">
-      <% if (latestPosts && latestPosts.length > 0) { %>
-        <% latestPosts.forEach(post => { %>
-          <article class="blog-card">
-            <a href="<%= locals.isStatic ? '/posts/'+post.slug+'.html' : '/posts/'+post.slug %>">
-              <div class="card-image-wrapper">
-                <div class="card-image" style="background-image: url('<%= post.cover_image %>');"></div>
-              </div>
-              <div class="card-content">
-                <div class="card-meta"><%= new Date(post.created_at).toISOString().slice(0,10) %></div>
-                <h3><%= post.title %></h3>
-              </div>
-            </a>
-          </article>
-        <% }) %>
-      <% } else { %>
-        <p class="empty-hint"><%= t('home.latest.empty') %></p>
-      <% } %>
-    </div>
-  </div>
-</section>
-
-<% if (locals.settings && (locals.settings.about_bio || locals.settings.about_avatar || (locals.settings.social_links && locals.settings.social_links.length))) { %>
-<!-- ========== 关于我 ========== -->
-<section class="section section-light" id="about">
-  <div class="container">
-    <div class="section-title">
-      <h2><%= t('home.about.title') %></h2>
-      <% if (locals.settings.site_subtitle) { %><p><%= locals.settings.site_subtitle %></p><% } %>
-    </div>
-    <div class="about-container">
-      <% if (locals.settings.about_avatar) { %>
-        <div class="about-image">
-          <img src="<%= locals.settings.about_avatar %>" alt="avatar" class="avatar">
+        <div class="home-banner home-banner-empty">
+          <h1><%= _settings.site_title || siteName %></h1>
+          <a class="home-pill" href="<%= _postsUrl %>"><%= t('home.startReading') %></a>
         </div>
       <% } %>
-      <div class="about-content">
-        <p><%= locals.settings.about_bio %></p>
-        <% if (locals.settings.social_links && locals.settings.social_links.length) { %>
-        <div class="about-links">
-          <% locals.settings.social_links.forEach(it => { %>
-            <a href="<%= it.type === 'email' ? (/^mailto:/.test(it.url) ? it.url : 'mailto:' + it.url) : it.url %>"
-               class="about-link" target="_blank" rel="noopener">
-              <i class="<%= locals.socialIcons[it.type] || 'fas fa-link' %>"></i> <%= locals.socialLabels[it.type] || '' %>
-            </a>
-          <% }) %>
+
+      <!-- B. 最新文章 -->
+      <section class="home-card" id="latest">
+        <div class="home-card-head">
+          <h2><%= t('home.latest.title') %></h2>
+          <a class="home-more" href="<%= _postsUrl %>"><%= t('home.readAll') %> <i class="fas fa-chevron-right"></i></a>
         </div>
+
+        <% if (latestPosts && latestPosts.length > 0) { %>
+          <div class="post-list">
+            <% latestPosts.forEach(post => { %>
+              <a class="post-item" href="<%= _postHref(post.slug) %>">
+                <div class="post-item-body">
+                  <h3 class="post-item-title"><%= post.title %></h3>
+                  <% if (post.excerpt) { %>
+                    <p class="post-item-desc"><%= post.excerpt %></p>
+                  <% } %>
+                  <div class="post-item-meta">
+                    <span><i class="far fa-calendar"></i><%= fmtTime(post.created_at).slice(0, 10) %></span>
+                    <% var _tags = _postTags(post); %>
+                    <% if (_tags.length) { %>
+                      <span class="post-item-tags">
+                        <% _tags.forEach(function (tag) { %>
+                          <span class="tag-pill js-tag-click" data-href="<%= _postsUrl %>?tag=<%= encodeURIComponent(tag) %>">#<%= tag %></span>
+                        <% }) %>
+                      </span>
+                    <% } %>
+                  </div>
+                </div>
+                <div class="post-item-thumb">
+                  <% if (post.cover_image) { %>
+                    <img src="<%= post.cover_image %>" alt="" loading="lazy" decoding="async">
+                  <% } else { %>
+                    <span class="post-item-thumb-ph"><i class="fas fa-file-alt"></i></span>
+                  <% } %>
+                </div>
+              </a>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <p class="home-empty"><%= t('home.latest.empty') %></p>
         <% } %>
-      </div>
+      </section>
+
+      <!-- C. 推荐文章 -->
+      <% if (featuredPosts && featuredPosts.length > 0) { %>
+        <section class="home-card" id="featured">
+          <div class="home-card-head">
+            <h2><%= t('home.featured.title') %></h2>
+            <a class="home-more" href="<%= _postsUrl %>"><%= t('home.readAll') %> <i class="fas fa-chevron-right"></i></a>
+          </div>
+
+          <div class="post-list">
+            <% featuredPosts.forEach(post => { %>
+              <a class="post-item" href="<%= _postHref(post.slug) %>">
+                <div class="post-item-body">
+                  <h3 class="post-item-title"><%= post.title %></h3>
+                  <% if (post.excerpt) { %>
+                    <p class="post-item-desc"><%= post.excerpt %></p>
+                  <% } %>
+                  <div class="post-item-meta">
+                    <span><i class="far fa-calendar"></i><%= fmtTime(post.created_at).slice(0, 10) %></span>
+                    <% var _tags = _postTags(post); %>
+                    <% if (_tags.length) { %>
+                      <span class="post-item-tags">
+                        <% _tags.forEach(function (tag) { %>
+                          <span class="tag-pill js-tag-click" data-href="<%= _postsUrl %>?tag=<%= encodeURIComponent(tag) %>">#<%= tag %></span>
+                        <% }) %>
+                      </span>
+                    <% } %>
+                  </div>
+                </div>
+                <div class="post-item-thumb">
+                  <% if (post.cover_image) { %>
+                    <img src="<%= post.cover_image %>" alt="" loading="lazy" decoding="async">
+                  <% } else { %>
+                    <span class="post-item-thumb-ph"><i class="fas fa-file-alt"></i></span>
+                  <% } %>
+                </div>
+              </a>
+            <% }) %>
+          </div>
+        </section>
+      <% } %>
+
     </div>
-  </div>
-</section>
-<% } %>
+
+    <!-- ================= 右栏 ================= -->
+    <aside class="home-side">
+
+      <!-- 个人名片 -->
+      <section class="home-card profile-card">
+        <% if (_settings.about_avatar) { %>
+          <img class="profile-avatar" src="<%= _settings.about_avatar %>" alt="<%= t('about.avatarAlt') %>" loading="lazy">
+        <% } else { %>
+          <div class="profile-avatar profile-avatar-ph"><i class="fas fa-user"></i></div>
+        <% } %>
+        <h2 class="profile-name"><%= t('home.greeting') %><%= _settings.site_title || siteName %></h2>
+        <p class="profile-desc"><%= _settings.about_bio || _settings.site_subtitle || t('home.profileFallback') %></p>
+
+        <div class="profile-stats">
+          <div class="stat">
+            <span class="stat-num"><%= _stats ? _stats.posts : '—' %></span>
+            <span class="stat-label"><%= t('home.stats.posts') %></span>
+          </div>
+          <div class="stat">
+            <span class="stat-num"><%= _stats ? _stats.tags : '—' %></span>
+            <span class="stat-label"><%= t('home.stats.tags') %></span>
+          </div>
+        </div>
+
+        <a class="home-pill" href="<%= _static ? '/about.html' : '/about' %>"><%= t('nav.about') %></a>
+      </section>
+
+      <!-- 热门标签 -->
+      <section class="home-card side-tags">
+        <div class="home-card-head">
+          <h2><%= t('home.tags.title') %></h2>
+          <a class="home-more" href="<%= _postsUrl %>"><%= t('home.tags.more') %> <i class="fas fa-chevron-right"></i></a>
+        </div>
+
+        <% if (_tagStats.length > 0) { %>
+          <div class="tag-list">
+            <% _tagStats.slice(0, 15).forEach((tag, i) => { %>
+              <a class="tag-row<%= i >= 5 ? ' tag-item-more' : '' %>" href="<%= _postsUrl %>?tag=<%= encodeURIComponent(tag.name) %>">
+                <span class="tag-name">#<%= tag.name %></span>
+                <span class="tag-count"><%= tag.count %></span>
+              </a>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <p class="home-empty"><%= t('home.tags.empty') %></p>
+        <% } %>
+      </section>
+
+    </aside>
+
+  </div><!-- /.home-grid -->
+
+</div>

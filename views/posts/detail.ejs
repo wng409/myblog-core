@@ -1,29 +1,49 @@
+<%
+  // 标签：优先使用后端清洗后的 tagList，静态导出时现场拆一次兜底
+  const _tags = (post && Array.isArray(post.tagList))
+    ? post.tagList
+    : String((post && post.tags) || '').split(',');
+  const _cleanTags = _tags
+    .map(function (t) { return String(t || '').trim(); })
+    .filter(Boolean)
+    .slice(0, 8);
+  const _listUrl = locals.isStatic ? '/posts.html' : '/posts';
+%>
 
-<section class="page-title" style="padding:40px 0;">
-  <div class="container">
-    <h1><%= post.title %></h1>
-    <div style="color:var(--hw-medium-gray); margin-top:10px;">
-      <span><i class="far fa-calendar"></i> <%= new Date(post.created_at).toISOString().slice(0,10) %></span>
-      <% if (post.tags) { %>
-        <span style="margin-left:20px;"><i class="fas fa-tags"></i> <%= post.tags %></span>
+<section class="detail-header">
+  <div class="detail-container">
+    <h1 class="detail-title"><%= post.title %></h1>
+    <div class="detail-meta">
+      <span><i class="far fa-calendar" aria-hidden="true"></i><%= fmtTime(post.created_at).slice(0, 10) %></span>
+      <% if (_cleanTags.length) { %>
+        <span class="detail-tags">
+          <i class="fas fa-tags" aria-hidden="true"></i>
+          <% _cleanTags.forEach(function (t) { %>
+            <a class="tag-pill" href="<%= _listUrl %>?tag=<%= encodeURIComponent(t) %>">#<%= t %></a>
+          <% }) %>
+        </span>
       <% } %>
     </div>
   </div>
 </section>
 
-<section class="articles-content" style="padding-top:0;">
-  <div class="container">
-    <article class="article-item" style="padding:40px;">
+<section class="detail-content">
+  <div class="detail-container">
+    <article class="detail-card">
       <div class="article-body">
         <%- post.htmlContent %>
       </div>
+
       <% if (post.bilibili_embed) { %>
-        <div style="margin:30px 0; position:relative; padding-bottom:56.25%; height:0;">
-          <iframe src="<%= post.bilibili_embed %>" style="position:absolute; top:0; left:0; width:100%; height:100%;" allowfullscreen></iframe>
+        <div class="detail-video">
+          <iframe src="<%= post.bilibili_embed %>" allowfullscreen loading="lazy"></iframe>
         </div>
       <% } %>
-      <div class="article-footer" style="margin-top:30px; border-top:1px solid var(--hw-border); padding-top:20px;">
-        <a href="<%= locals.isStatic ? '/posts.html' : '/posts' %>" class="project-link"><i class="fas fa-arrow-left"></i> <%= t('posts.backToList') %></a>
+
+      <div class="detail-footer">
+        <a href="<%= _listUrl %>" class="detail-back">
+          <i class="fas fa-arrow-left" aria-hidden="true"></i> <%= t('posts.backToList') %>
+        </a>
       </div>
     </article>
   </div>
