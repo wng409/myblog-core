@@ -118,7 +118,8 @@ myblog-core/
 |   |-- users.js           # Accounts, Auth, Logs, Error pages
 |   |-- i18n/              # zh / en / classical / mars dictionaries
 |-- public/                # Static resources
-|   |-- css/{style.css,admin.css,all.min.css,easymde.min.css}
+|   |-- css/{style.css,admin.css,site-v5.css,admin-v5.css,hm-ui.css,all.min.css,easymde.min.css}
+|   |-- HarmonyOS_Sans_Regular.ttf   # Bundled UI font (see license section below)
 |   |-- js/{main.js,theme.js,posts.js,static-search.js,toast.js,
 |   |        admin-sidebar.js,admin-ui.js,admin-settings.js,
 |   |        admin-logs.js,admin-editor.js,login.js,easymde.min.js}
@@ -131,6 +132,7 @@ myblog-core/
 |   |-- admin/             # login / dashboard / posts / settings / site / profile / logs
 |-- db/                    # SQLite DB (auto-created at runtime)
 |-- sessions/              # Session files (auto-created at runtime)
+|-- LICENSE_Fonts          # HarmonyOS Sans Fonts License Agreement
 |-- .env.example           # Env variable example
 |-- package.json
 ```
@@ -301,6 +303,19 @@ To avoid any runtime dependency on public CDNs — enabling true offline use and
 | --- | --- | --- | --- | --- |
 | Font Awesome Free | `public/css/all.min.css`, `public/webfonts/*` | 6.4.0 | Originally loaded via the Cloudflare CDN (cdnjs) | Code: MIT; Icons: CC BY 4.0; Fonts: SIL OFL 1.1 |
 | EasyMDE | `public/css/easymde.min.css`, `public/js/easymde.min.js` | 2.18.0 | Originally loaded via CDN | MIT |
+| HarmonyOS Sans | `public/HarmonyOS_Sans_Regular.ttf` | Regular (unmodified) | Huawei Device Co., Ltd. official release | HarmonyOS Sans Fonts License Agreement (free for commercial use) |
+
+### HarmonyOS Sans Fonts License
+
+The bundled `public/HarmonyOS_Sans_Regular.ttf` is the official HarmonyOS Sans font by **Huawei Device Co., Ltd.**, used here as the primary UI typeface.
+
+- **Free for commercial use**: the HarmonyOS Sans Fonts License Agreement grants a royalty-free, worldwide, non-exclusive license to use, copy, merge, embed, bundle, redistribute and/or sell unmodified copies of the fonts together with software.
+- **This project therefore ships the font unmodified, together with its license** — the full text is kept in [`LICENSE_Fonts`](./LICENSE_Fonts) at the repository root, as required by clause 4 of the agreement.
+- **Restrictions**: the font files may not be modified, and may not be redistributed or sold on a stand-alone basis. Content created *with* the font (pages, logos, screenshots, etc.) is not affected by this restriction.
+- **Attribution**: this section serves as the prominent notice required by clause 1 that HarmonyOS Sans Fonts are used in this software.
+- **Source**: released by Huawei as part of the OpenHarmony `global_system_resources` project.
+
+Removing `public/HarmonyOS_Sans_Regular.ttf` (and the `@font-face` block at the top of `public/css/site-v5.css`) will make the site fall back to the system font stack without any functional impact.
 
 ### MIT License
 

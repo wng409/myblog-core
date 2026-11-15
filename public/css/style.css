@@ -44,9 +44,11 @@ html {
   --shadow: 0 2px 8px rgba(0,0,0,0.1);
   --header-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
   --menu-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
-  --footer-bg: #333333;
-  --footer-text: #ffffff;
-  --footer-muted: #b0b0b0;
+  /* 页脚：极简浅色 SaaS 风格（顶部 1px 细边框由 --footer-border 控制） */
+  --footer-bg: #f7f8fa;
+  --footer-text: #333333;
+  --footer-muted: #888888;
+  --footer-border: #ebedf0;
   --accent-soft: color-mix(in srgb, var(--brand-color, #e60012) 8%, transparent);
   color-scheme: light;
 
@@ -112,9 +114,10 @@ html {
   --shadow: 0 2px 8px rgba(0,0,0,0.4);
   --header-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
   --menu-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
-  --footer-bg: #141414;
+  --footer-bg: #161616;
   --footer-text: #e8e8e8;
   --footer-muted: #9a9a9a;
+  --footer-border: #2a2a2a;
   --accent-soft: color-mix(in srgb, var(--brand-color, #e60012) 22%, transparent);
   --hw-border: #3d3d3d;
   --hw-light-gray: #2f2f2f;
@@ -128,7 +131,8 @@ html {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  /* HarmonyOS Sans 置于首位；@font-face 定义在 site-v5.css 顶部 */
+  font-family: 'HarmonyOS_Sans', 'Segoe UI', 'Microsoft YaHei', sans-serif;
 }
 
 body {
@@ -1041,6 +1045,7 @@ header {
    ============================================================ */
 footer {
   background: var(--footer-bg);
+  border-top: 1px solid var(--footer-border);
   color: var(--footer-text);
   padding: 60px 0 30px;
 }
@@ -1097,7 +1102,7 @@ footer {
   justify-content: center;
   width: 36px;
   height: 36px;
-  background: var(--white-10);
+  background: var(--surface-gray);
   border-radius: 50%;
   transition: all 0.3s;
   color: var(--footer-text);
@@ -1105,13 +1110,14 @@ footer {
 
 .social-links a:hover {
   background: var(--hw-red);
+  color: #ffffff;
   transform: translateY(-3px);
 }
 
 .copyright {
   text-align: center;
   padding-top: 30px;
-  border-top: 1px solid var(--white-10);
+  border-top: 1px solid var(--footer-border);
   color: var(--footer-muted);
   font-size: 0.9rem;
 }

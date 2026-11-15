@@ -88,13 +88,12 @@
                     <% } %>
                   </div>
                 </div>
-                <div class="post-item-thumb">
-                  <% if (post.cover_image) { %>
-                    <img src="<%= post.cover_image %>" alt="" loading="lazy" decoding="async">
-                  <% } else { %>
-                    <span class="post-item-thumb-ph"><i class="fas fa-file-alt"></i></span>
-                  <% } %>
-                </div>
+                <%# 无封面时不渲染缩略图容器，让文字占满整行 %>
+                <% if (post.cover_image) { %>
+                  <div class="post-item-thumb">
+                    <img src="<%= post.cover_image %>" alt="<%= post.title %>" loading="lazy" decoding="async">
+                  </div>
+                <% } %>
               </a>
             <% }) %>
           </div>
@@ -131,13 +130,12 @@
                     <% } %>
                   </div>
                 </div>
-                <div class="post-item-thumb">
-                  <% if (post.cover_image) { %>
-                    <img src="<%= post.cover_image %>" alt="" loading="lazy" decoding="async">
-                  <% } else { %>
-                    <span class="post-item-thumb-ph"><i class="fas fa-file-alt"></i></span>
-                  <% } %>
-                </div>
+                <%# 无封面时不渲染缩略图容器，让文字占满整行 %>
+                <% if (post.cover_image) { %>
+                  <div class="post-item-thumb">
+                    <img src="<%= post.cover_image %>" alt="<%= post.title %>" loading="lazy" decoding="async">
+                  </div>
+                <% } %>
               </a>
             <% }) %>
           </div>

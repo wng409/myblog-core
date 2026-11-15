@@ -26,15 +26,12 @@
       <div class="posts-grid">
         <% posts.forEach(post => { %>
           <a href="<%= locals.isStatic ? '/posts/'+post.slug+'.html' : '/posts/'+post.slug %>" class="post-card">
-            <div class="post-card-cover">
-              <% if (post.cover_image) { %>
-                <img src="<%= post.cover_image %>" alt="" loading="lazy">
-              <% } else { %>
-                <div class="post-card-placeholder">
-                  <i class="fas fa-file-alt"></i>
-                </div>
-              <% } %>
-            </div>
+            <%# 无封面时不渲染封面容器，正文占满卡片 %>
+            <% if (post.cover_image) { %>
+              <div class="post-card-cover">
+                <img src="<%= post.cover_image %>" alt="<%= post.title %>" loading="lazy">
+              </div>
+            <% } %>
             <div class="post-card-body">
               <h2 class="post-card-title"><%= post.title %></h2>
               <div class="post-card-meta">

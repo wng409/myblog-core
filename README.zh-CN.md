@@ -117,7 +117,8 @@ myblog-core/
 |   |-- users.js           # 账号、鉴权、日志、错误页
 |   |-- i18n/              # 简体中文 / English / 文言文 / 火星文词典
 |-- public/                # 静态资源
-|   |-- css/{style.css,admin.css,all.min.css,easymde.min.css}
+|   |-- css/{style.css,admin.css,site-v5.css,admin-v5.css,hm-ui.css,all.min.css,easymde.min.css}
+|   |-- HarmonyOS_Sans_Regular.ttf   # 内置界面字体（许可声明见下文）
 |   |-- js/{main.js,theme.js,posts.js,static-search.js,toast.js,
 |   |        admin-sidebar.js,admin-ui.js,admin-settings.js,
 |   |        admin-logs.js,admin-editor.js,login.js,easymde.min.js}
@@ -130,6 +131,7 @@ myblog-core/
 |   |-- admin/             # login / dashboard / posts / settings / site / profile / logs
 |-- db/                    # SQLite 数据库（运行时自动创建）
 |-- sessions/              # 会话文件（运行时自动创建）
+|-- LICENSE_Fonts          # HarmonyOS Sans 字体许可协议
 |-- .env.example           # 环境变量示例
 |-- package.json
 ```
@@ -300,6 +302,19 @@ sqlite3 db/database.sqlite ".backup 'db/backup-$(date +%Y%m%d-%H%M%S).sqlite'"
 | --- | --- | --- | --- | --- |
 | Font Awesome Free | `public/css/all.min.css`、`public/webfonts/*` | 6.4.0 | 原经 Cloudflare CDN（cdnjs）引入 | 代码 MIT；图标 CC BY 4.0；字体 SIL OFL 1.1 |
 | EasyMDE | `public/css/easymde.min.css`、`public/js/easymde.min.js` | 2.18.0 | 原经 CDN 引入 | MIT |
+| HarmonyOS Sans | `public/HarmonyOS_Sans_Regular.ttf` | Regular（未修改）| 华为终端有限公司官方发布 | HarmonyOS Sans Fonts License Agreement（免费商用）|
+
+### HarmonyOS Sans 字体许可
+
+仓库内 `public/HarmonyOS_Sans_Regular.ttf` 为**华为终端有限公司**发布的官方 HarmonyOS Sans 字体，本项目将其作为首选界面字体。
+
+- **免费商用**：HarmonyOS Sans Fonts License Agreement 授予全球范围、免费、非独占的授权，允许使用、复制、合并、嵌入、捆绑、再分发和销售**未经修改**的字体副本，且可随软件一起分发。
+- **本仓库因此保持字体原样分发，并随附协议全文**——完整文本见仓库根目录的 [`LICENSE_Fonts`](./LICENSE_Fonts)，符合协议第 4 条「保留版权声明与协议」的要求。
+- **限制**：不得修改字体文件；不得将字体以**独立形式**再分发或销售。使用该字体创作的内容（页面、Logo、截图等）不受此限制。
+- **署名**：本节即协议第 1 条要求的「在软件中显著声明使用了 HarmonyOS Sans Fonts」。
+- **来源**：华为在 OpenHarmony `global_system_resources` 项目中发布。
+
+删除 `public/HarmonyOS_Sans_Regular.ttf` 及 `public/css/site-v5.css` 顶部的 `@font-face` 段落，站点会自动回落到系统字体栈，功能不受影响。
 
 ### MIT License
 

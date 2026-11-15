@@ -1603,6 +1603,8 @@ body:has(.admin-container) {
 }
 .log-meta i { color: var(--admin-text-tertiary); margin-right: 5px; }
 .log-ua { cursor: help; }
+/* 鸿蒙设备图标为内联 SVG（CSP 禁止内联 style，故在这里统一尺寸与对齐） */
+.log-ua svg { vertical-align: -2px; margin-right: 6px; }
 
 /* 状态点 */
 .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; background: var(--admin-text-tertiary); }
