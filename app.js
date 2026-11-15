@@ -76,8 +76,8 @@ const ROOT_DIR = __dirname;
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const UPLOADS_DIR = path.join(PUBLIC_DIR, 'uploads');
 
-// 自动创建运行时目录，保证开箱即用
-['db', 'sessions', 'public/uploads'].forEach((dir) => {
+// 自动创建运行时目录，保证开箱即用（与 Dockerfile 预创建列表保持一致）
+['db', 'sessions', 'public/uploads', 'public/_tmp'].forEach((dir) => {
   try { fs.mkdirSync(path.join(ROOT_DIR, dir), { recursive: true }); } catch (e) {}
 });
 
