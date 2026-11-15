@@ -1,6 +1,6 @@
 {
   "name": "myblog",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A minimal personal blog CMS built with Node.js, Express and SQLite",
   "private": true,
   "main": "app.js",

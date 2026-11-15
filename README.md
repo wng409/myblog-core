@@ -6,6 +6,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-v22_LTS-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![Version](https://img.shields.io/badge/version-v1.1.0-blue.svg)](https://atomgit.com/wng409/myblog-core/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 **Language / 语言:** [English](README.md) | [简体中文](README.zh-CN.md)
