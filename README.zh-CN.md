@@ -427,6 +427,28 @@ node -e "const a=Object.keys(require('./lib/i18n/zh.js')),b=Object.keys(require(
 
 **贡献流程**：fork → 新建分支 → 添加或更新语言文件 → 向 `main` 提交 PR，并说明语言种类与翻译完整度。
 
+## 更新记录
+
+### v1.1.2 — 2026-11-15
+
+**修复**
+
+- 启动时补齐 `public/_tmp` 目录的自动创建。此前仅创建 `db/`、`sessions/`、`public/uploads/` 三个目录，而 `Dockerfile` 与本 README 都声明了**四个**目录，导致 Node 与容器两种部署方式下的磁盘结构不一致。该问题由部署冒烟测试发现。
+- 上传行为无变化：`multer` 仍写入 `public/uploads/<日期>/`；`public/_tmp` 是保留路径，在 `/_tmp/` 处被显式拦截（404）。
+
+**文档**
+
+- `.env.example` 增加说明：`NODE_ENV=production` 会给 session cookie 打上 `Secure` 标志，只经 HTTPS 下发。纯 HTTP 本地调试需改为 `NODE_ENV=development`，否则登录成功（`302 → /admin`）后会立刻被弹回登录页。
+
+### v1.1.1 — 2026-11-15
+
+- **Docker 部署支持**：多阶段 `Dockerfile`（deps 阶段编译 sqlite3、非 root 的 `node` 用户、内置 `HEALTHCHECK`）、带三个命名卷的 `docker-compose.yml`、`.dockerignore`，并补齐此前缺失的 `.env.example`。
+- 双语 README 增加 Docker 快速开始，同时保留 systemd + Nginx 手动部署路径。
+
+### v1.1.0 — 2026-11-15
+
+- 首个稳定版：内置 HarmonyOS Sans（含 `LICENSE_Fonts`）、浅色 SaaS 页脚配色、无封面卡片不再渲染占位图、日志页鸿蒙设备图标、博文列表 150 字摘要。
+
 ## 许可与协议
 
 - **本仓库（myblog-core）**：以 [MIT](./LICENSE) 许可开源，可自由使用、修改、分发。

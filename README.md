@@ -428,6 +428,28 @@ node -e "const a=Object.keys(require('./lib/i18n/zh.js')),b=Object.keys(require(
 
 **Contribution flow**: fork → create a branch → add or update the language file → open a PR against `main`, stating the language and how complete the translation is.
 
+## Changelog
+
+### v1.1.2 — 2026-11-15
+
+**Fixes**
+
+- `public/_tmp` is now created automatically on startup. Previously only `db/`, `sessions/` and `public/uploads/` were created, while `Dockerfile` and this README both declared **four** directories — so the on-disk layout differed between Node and container deployment. Found by the deployment smoke test.
+- No behavioural change to uploads: `multer` still writes to `public/uploads/<date>/`. `public/_tmp` is a reserved path that is explicitly blocked at `/_tmp/` (404).
+
+**Docs**
+
+- `.env.example` now explains that `NODE_ENV=production` marks the session cookie `Secure`, so it is only sent over HTTPS. Debugging over plain HTTP needs `NODE_ENV=development`, otherwise a successful login (`302 → /admin`) bounces straight back to the login page.
+
+### v1.1.1 — 2026-11-15
+
+- **Docker deployment**: multi-stage `Dockerfile` (sqlite3 compiled in the deps stage, unprivileged `node` user, built-in `HEALTHCHECK`), `docker-compose.yml` with three named volumes, `.dockerignore`, and the previously missing `.env.example`.
+- Bilingual README gained a Docker quick start and kept the systemd + Nginx path.
+
+### v1.1.0 — 2026-11-15
+
+- First stable release: bundled HarmonyOS Sans (with `LICENSE_Fonts`), light SaaS footer palette, no placeholder image for cover-less cards, HarmonyOS device icon on the log page, and 150-character excerpts on the post list.
+
 ## License
 
 - **This Repository (myblog-core)**: Open-sourced under the [MIT](./LICENSE) License. Free to use, modify, and distribute.
