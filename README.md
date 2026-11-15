@@ -6,7 +6,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-v22_LTS-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![Version](https://img.shields.io/badge/version-v1.1.0-blue.svg)](https://atomgit.com/wng409/myblog-core/releases)
+[![Version](https://img.shields.io/badge/version-v1.1.1-blue.svg)](https://atomgit.com/wng409/myblog-core/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 **Language / 语言:** [English](README.md) | [简体中文](README.zh-CN.md)
@@ -179,6 +179,37 @@ On first launch, `db/`, `sessions/`, and `public/uploads/` directories are auto-
 > When `NODE_ENV=production`, cookies are only sent over HTTPS. Use `development` for local HTTP debugging.
 
 ## Deployment
+
+### Option A — Docker (recommended)
+
+The repository ships a multi-stage `Dockerfile` and a `docker-compose.yml`.
+
+```bash
+cp .env.example .env          # fill in SESSION_SECRET: openssl rand -base64 32
+docker compose up -d --build
+```
+
+Then open <http://localhost:3000>. Database, sessions and uploads are stored in three named volumes (`myblog-db`, `myblog-sessions`, `myblog-uploads`), so rebuilding the image keeps all posts and media.
+
+Without Compose:
+
+```bash
+docker build -t myblog-core:1.1.1 .
+docker run -d --name myblog -p 3000:3000 \
+  --env-file .env \
+  -v myblog-db:/app/db \
+  -v myblog-sessions:/app/sessions \
+  -v myblog-uploads:/app/public/uploads \
+  myblog-core:1.1.1
+```
+
+Notes:
+
+- The container binds `0.0.0.0`; never override `HOST` with `127.0.0.1`, or the port mapping will not reach the app.
+- The image runs as the unprivileged `node` user (uid 1000). If you bind-mount host directories instead of named volumes, `chown 1000:1000` them first.
+- Initial admin credentials are printed in `docker compose logs -f myblog` on first start.
+
+### Option B — systemd + Nginx (manual)
 
 A minimal production setup: **systemd** for process supervision + **Nginx** as a TLS-terminating reverse proxy. Adjust paths and domain to your own.
 

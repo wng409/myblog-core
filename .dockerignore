@@ -1,0 +1,26 @@
+# 依赖与构建产物
+node_modules
+npm-debug.log*
+
+# 版本控制与编辑器
+.git
+.gitattributes
+.gitignore
+.vscode
+.idea
+
+# 环境与密钥（.env.example 需要保留在镜像内，供参考）
+.env
+.env.*
+!.env.example
+
+# 运行时数据（必须走卷挂载，不能打进镜像）
+db
+sessions
+public/uploads/*
+public/_tmp
+dist
+
+# 日志与临时文件
+*.log
+tmp

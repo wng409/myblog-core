@@ -6,7 +6,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-v22_LTS-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![Version](https://img.shields.io/badge/version-v1.1.0-blue.svg)](https://atomgit.com/wng409/myblog-core/releases)
+[![Version](https://img.shields.io/badge/version-v1.1.1-blue.svg)](https://atomgit.com/wng409/myblog-core/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 **Language / 语言:** [English](README.md) | [简体中文](README.zh-CN.md)
@@ -178,6 +178,37 @@ npm start
 > `NODE_ENV=production` 时 Cookie 只在 HTTPS 下发送，本地 http 调试请使用 `development`。
 
 ## 部署
+
+### 方案 A —— Docker（推荐）
+
+仓库内置多阶段 `Dockerfile` 与 `docker-compose.yml`。
+
+```bash
+cp .env.example .env          # 填入 SESSION_SECRET：openssl rand -base64 32
+docker compose up -d --build
+```
+
+启动后访问 <http://localhost:3000>。数据库、session 与上传文件分别存放在三个命名卷（`myblog-db`、`myblog-sessions`、`myblog-uploads`），重建镜像不会丢失文章与媒体。
+
+不使用 Compose 时：
+
+```bash
+docker build -t myblog-core:1.1.1 .
+docker run -d --name myblog -p 3000:3000 \
+  --env-file .env \
+  -v myblog-db:/app/db \
+  -v myblog-sessions:/app/sessions \
+  -v myblog-uploads:/app/public/uploads \
+  myblog-core:1.1.1
+```
+
+注意事项：
+
+- 容器监听 `0.0.0.0`，**不要**把 `HOST` 覆盖为 `127.0.0.1`，否则端口映射无法访问。
+- 镜像以非特权用户 `node`（uid 1000）运行。若不用命名卷而改用宿主目录挂载，请先 `chown 1000:1000`。
+- 首次启动的默认管理员账号会打印在 `docker compose logs -f myblog` 中。
+
+### 方案 B —— systemd + Nginx（手动）
 
 一套最小可用的生产部署：**systemd** 常驻进程 + **Nginx** 终止 TLS 并反向代理。路径与域名按你自己的环境调整。
 

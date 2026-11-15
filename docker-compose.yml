@@ -1,0 +1,35 @@
+# ============================================================
+# myblog-core 一键启动
+#   1) cp .env.example .env 并填入 SESSION_SECRET
+#   2) docker compose up -d --build
+#   3) 浏览器访问 http://localhost:3000
+# ============================================================
+
+services:
+  myblog:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: myblog-core:1.1.1
+    container_name: myblog-core
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      # 覆盖 .env 中的 HOST，容器内必须监听全部网卡
+      HOST: 0.0.0.0
+      NODE_ENV: production
+    volumes:
+      # 数据库（含 WAL 文件）
+      - myblog-db:/app/db
+      # session 文件
+      - myblog-sessions:/app/sessions
+      # 用户上传的图片与视频
+      - myblog-uploads:/app/public/uploads
+    restart: unless-stopped
+
+volumes:
+  myblog-db:
+  myblog-sessions:
+  myblog-uploads:
