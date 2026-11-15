@@ -860,3 +860,19 @@
   .history-list { padding-left: 20px; }
   .history-item::before { left: -27px; }
 }
+
+/* ============================================================
+   无封面卡片的摘要：两行省略
+   仅在没有封面图时渲染（见 views/posts/list.ejs），此时卡片为纯文字纵向排列，
+   间距由 .post-card-body 的 flex gap 统一控制，故这里 margin 归零
+   ============================================================ */
+.post-card-excerpt {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

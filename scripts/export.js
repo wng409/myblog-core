@@ -91,6 +91,20 @@ function makeExcerpt(content) {
   return text.length > EXCERPT_LEN ? text.slice(0, EXCERPT_LEN) + '...' : text;
 }
 
+// 列表摘要：与 app.js 的 toExcerpt 保持一致（去 Markdown 标记 / 图片 / 链接 / HTML，压缩空白后截断）
+function toExcerpt(raw, max) {
+  const limit = max || 150;
+  const text = String(raw || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/[#>*_`~]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text.length > limit ? text.slice(0, limit) + '…' : text;
+}
+
 // 与 app.js 的 renderMarkdownCached 输出保持一致：markdown-it 渲染 + DOMPurify 清洗
 function renderMarkdown(content) {
   return rewriteInternalLinks(DOMPurify.sanitize(md.render(content || '')));
@@ -171,13 +185,21 @@ async function main() {
     console.log('[OK] public/ 静态资源已拷贝至 dist/');
   }
 
-  // 2. 读取文章数据（core 为单用户，无 author 联查；LENGTH(content) 供阅读时长，不读正文）
+  // 2. 读取文章数据（core 为单用户，无 author 联查；LENGTH(content) 供阅读时长；
+  //    substr 取前 400 字生成列表摘要，避免整篇正文进入内存）
   const posts = await dbAll(db, `
     SELECT id, title, slug, tags, cover_image, bilibili_embed,
-           created_at, updated_at, LENGTH(content) AS content_len
+           created_at, updated_at, LENGTH(content) AS content_len,
+           substr(content, 1, 400) AS excerpt
     FROM posts
     WHERE deleted_at IS NULL
     ORDER BY created_at DESC`);
+
+  // 统一清洗为纯文本摘要（150 字）。仅列表页使用：
+  // 首页卡片为「左文右图」布局，不展示摘要，故把 excerpt 从 posts 上摘掉，
+  // 避免首页模板的 post-item-desc 分支被意外点亮。
+  const listExcerpts = {};
+  posts.forEach(p => { listExcerpts[p.id] = toExcerpt(p.excerpt, 150); delete p.excerpt; });
 
   // 2.1 站点个性化设置（标题/副标题/主题色/关于我/页脚），注入模板
   CURRENT_SETTINGS = (await dbGet(db, 'SELECT site_title, site_subtitle, theme_color, about_bio, about_github, about_email, about_name, about_title, about_text, about_tech, about_history, social_links, footer_text, footer_subtitle, site_logo, about_avatar FROM settings WHERE id = 1')) || {};
@@ -244,7 +266,7 @@ async function main() {
 
   const postsHtml = await renderPage('posts/list.ejs', {
     titleKey: 'nav.posts',
-    posts,
+    posts: posts.map(p => Object.assign({}, p, { excerpt: listExcerpts[p.id] })),
     tags: allTags,
     currentTag: '',
     search: '',

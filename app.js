@@ -53,6 +53,20 @@ function renderMarkdownCached(content, updated_at, slug) {
   return html;
 }
 
+// 列表/首页摘要：去掉 Markdown 标记与 HTML 标签，压缩空白后截断（默认 150 字）
+function toExcerpt(raw, max) {
+  const limit = max || 150;
+  const text = String(raw || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/[#>*_`~]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text.length > limit ? text.slice(0, limit) + '…' : text;
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -671,13 +685,17 @@ app.get('/posts', (req, res) => {
     if (err) return res.status(500).send(users.errorPage({ status: 500, title: i18n.t(currentLang, 'error.500.title'), message: i18n.t(currentLang, 'error.500.message'), lang: currentLang }));
     const totalPages = Math.max(1, Math.ceil((row ? row.total : 0) / limit));
 
-    // 2) 查当前页数据（LENGTH(content) 供阅读时长，避免白读正文）
-    const sql = `SELECT id, title, slug, tags, cover_image, created_at, updated_at, LENGTH(content) AS content_len
-                 FROM posts${whereSql}
-                 ORDER BY created_at ${sort === 'asc' ? 'ASC' : 'DESC'} LIMIT ? OFFSET ?`;
+    // 2) 查当前页数据（LENGTH(content) 供阅读时长；substr 取前 400 字生成摘要，避免整篇正文）
+    const sql = `SELECT p.id, p.title, p.slug, p.tags, p.cover_image, p.created_at, p.updated_at,
+                        LENGTH(p.content) AS content_len, substr(p.content, 1, 400) AS excerpt
+                 FROM posts p${whereSql}
+                 ORDER BY p.created_at ${sort === 'asc' ? 'ASC' : 'DESC'} LIMIT ? OFFSET ?`;
     db.all(sql, [...params, limit, offset], (err, posts) => {
       if (err) return res.status(500).send(users.errorPage({ status: 500, title: i18n.t(currentLang, 'error.500.title'), message: i18n.t(currentLang, 'error.500.message'), lang: currentLang }));
-      posts.forEach(p => { p.tagList = parseTags(p.tags); });
+      posts.forEach(p => {
+        p.tagList = parseTags(p.tags);
+        p.excerpt = toExcerpt(p.excerpt, 150);
+      });
       getAllTags((err, tags) => {
         if (err) tags = [];
         res.render('posts/list', {
