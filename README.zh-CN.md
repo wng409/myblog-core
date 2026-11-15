@@ -6,7 +6,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-v22_LTS-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![Version](https://img.shields.io/badge/version-v1.1.1-blue.svg)](https://atomgit.com/wng409/myblog-core/releases)
+[![Version](https://img.shields.io/badge/version-v1.1.2-blue.svg)](https://atomgit.com/wng409/myblog-core/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 **Language / 语言:** [English](README.md) | [简体中文](README.zh-CN.md)
@@ -193,13 +193,13 @@ docker compose up -d --build
 不使用 Compose 时：
 
 ```bash
-docker build -t myblog-core:1.1.1 .
+docker build -t myblog-core:1.1.2 .
 docker run -d --name myblog -p 3000:3000 \
   --env-file .env \
   -v myblog-db:/app/db \
   -v myblog-sessions:/app/sessions \
   -v myblog-uploads:/app/public/uploads \
-  myblog-core:1.1.1
+  myblog-core:1.1.2
 ```
 
 注意事项：
