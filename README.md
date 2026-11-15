@@ -144,23 +144,33 @@ myblog-core/
 - npm 10+
 - Build tools (required for `sqlite3` native module): `build-essential`, `python3`
 
-## Quick Start
+## Installation & Run
 
+> **⚠️ Crucial Note**: `.env.example` defaults to `NODE_ENV=production`, which sets a `Secure` flag on the session cookie. For local `http://` debugging without an SSL certificate, you **MUST** change it to `NODE_ENV=development` in your `.env` file, otherwise a successful login will bounce you straight back to the login page.
+
+**Option 1: From Source (For developers)**
+If you cloned this repository via Git, strictly use `npm ci` to respect the lockfile:
 ```bash
-# 1. Install dependencies
+git clone https://gitcode.com/wng409/myblog-core.git
+cd myblog-core
+cp .env.example .env  # Edit NODE_ENV (dev/prod) and SESSION_SECRET
+npm ci --omit=dev
+npm start
+```
+
+**Option 2: From Release Tarball (For quick deployment)**
+If you downloaded the `myblog-1.1.2.tgz` from the Release page, use `npm install` to unpack and install dependencies:
+```bash
+tar -xzf myblog-1.1.2.tgz
+cd package
+cp .env.example .env  # Edit NODE_ENV (dev/prod) and SESSION_SECRET
 npm install
-
-# 2. Prepare environment variables
-cp .env.example .env
-# Edit .env, at least set SESSION_SECRET (openssl rand -base64 32)
-
-# 3. Start
 npm start
 ```
 
 Visit frontend at `http://127.0.0.1:3000`, admin at `http://127.0.0.1:3000/admin`.
 
-On first launch, `db/`, `sessions/`, and `public/uploads/` directories are auto-created, and a default admin is initialized:
+On first launch, `db/`, `sessions/`, `public/uploads/`, and `public/_tmp/` directories are auto-created, and a default admin is initialized:
 - If `ADMIN_PASSWORD` is configured in `.env`, use that password;
 - Otherwise, a random initial password is generated and printed in the startup log.
 

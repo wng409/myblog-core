@@ -143,23 +143,33 @@ myblog-core/
 - npm 10+
 - 编译工具（安装 `sqlite3` 原生模块时需要）：`build-essential`、`python3`
 
-## 快速开始
+## 安装与运行
 
+> **⚠️ 核心警告**：`.env.example` 默认 `NODE_ENV=production`，这会强制 Session Cookie 带上 `Secure` 标志。如果你在本地 `http://` 环境调试（没有 HTTPS），**必须**在 `.env` 中将其改为 `NODE_ENV=development`，否则登录成功后会被立刻踢回登录页！
+
+**方式一：基于源码克隆（适合开发者 / 自定义修改）**
+如果是从 Git 仓库克隆的源码，请严格使用 `npm ci` 以锁定依赖版本：
 ```bash
-# 1. 安装依赖
+git clone https://gitcode.com/wng409/myblog-core.git
+cd myblog-core
+cp .env.example .env  # 记得修改 NODE_ENV 和 SESSION_SECRET
+npm ci --omit=dev
+npm start
+```
+
+**方式二：基于 Release 发行版（适合开箱即用 / 快速部署）**
+如果下载的是 Release 中的 `myblog-1.1.2.tgz`，请直接使用 `npm install` 本地安装，无需 lockfile：
+```bash
+tar -xzf myblog-1.1.2.tgz
+cd package
+cp .env.example .env  # 记得修改 NODE_ENV 和 SESSION_SECRET
 npm install
-
-# 2. 准备环境变量
-cp .env.example .env
-# 编辑 .env，至少填入 SESSION_SECRET（openssl rand -base64 32）
-
-# 3. 启动
 npm start
 ```
 
 访问前台 `http://127.0.0.1:3000`，后台 `http://127.0.0.1:3000/admin`。
 
-首次启动会自动创建 `db/`、`sessions/`、`public/uploads/` 目录和默认管理员：
+首次启动会自动创建 `db/`、`sessions/`、`public/uploads/`、`public/_tmp/` 目录和默认管理员：
 - 若 `.env` 中配置了 `ADMIN_PASSWORD`，使用该密码；
 - 否则随机生成一个初始密码并打印在启动日志中。
 
