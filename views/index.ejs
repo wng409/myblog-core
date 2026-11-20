@@ -4,7 +4,8 @@
   const _static = locals.isStatic;
   const _postsUrl = _static ? '/posts.html' : '/posts';
   const _postHref = function (slug) {
-    return _static ? '/posts/' + slug + '.html' : '/posts/' + slug;
+    const safe = encodeURIComponent(slug);
+    return _static ? '/posts/' + safe + '.html' : '/posts/' + safe;
   };
   const _postTags = function (post) {
     var list = (post && Array.isArray(post.tagList))

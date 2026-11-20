@@ -94,8 +94,8 @@
 
         <script id="tag-data" type="application/json">
           {
-            "postTags": <%- JSON.stringify(post && post.tagList ? post.tagList : []) %>,
-            "allTags": <%- JSON.stringify(typeof allTags !== 'undefined' && allTags ? allTags : []) %>
+            "postTags": <%- JSON.stringify(post && post.tagList ? post.tagList : []).replace(/[<>&]/g, function (c) { return c === '<' ? '\\u003c' : c === '>' ? '\\u003e' : '\\u0026'; }) %>,
+            "allTags": <%- JSON.stringify(typeof allTags !== 'undefined' && allTags ? allTags : []).replace(/[<>&]/g, function (c) { return c === '<' ? '\\u003c' : c === '>' ? '\\u003e' : '\\u0026'; }) %>
           }
         </script>
       </form>
