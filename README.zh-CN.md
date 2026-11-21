@@ -468,6 +468,13 @@ node -e "const a=Object.keys(require('./lib/i18n/zh.js')),b=Object.keys(require(
 - 标签池缓存（60 秒）、后台列表分页（20 条/页）、孤儿清理异步化并支持 `?dryRun=1`。
 - `npm run check` 检查全部 JS/EJS；`lib/render.js` 统一 `fmtTime` 实现。
 
+**发行附件**
+
+- `myblog-core-1.2.0.tar.gz` / `.zip` —— 完整源码（含 Docker 配置，不含 `.env`、数据库与 `node_modules`）
+- `myblog-core-1.2.0-docker.zip` —— 仅 Docker 部署文件（`Dockerfile` / `docker-compose.yml` / `.dockerignore` / `.env.example`）
+- 本版本未预构建容器镜像（发布环境无 Docker），请用上述文件执行 `docker compose up -d --build` 自行构建
+
+
 ### v1.1.2 — 2026-11-15
 
 **修复**

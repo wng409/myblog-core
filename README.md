@@ -469,6 +469,13 @@ node -e "const a=Object.keys(require('./lib/i18n/zh.js')),b=Object.keys(require(
 - Tag pool cache (60 s), admin list pagination (20/page), async orphan cleanup with `?dryRun=1`.
 - `npm run check` validates every JS/EJS file; `lib/render.js` holds the single `fmtTime` implementation.
 
+**Release assets**
+
+- `myblog-core-1.2.0.tar.gz` / `.zip` — full source (includes Docker config, excludes `.env`, database and `node_modules`)
+- `myblog-core-1.2.0-docker.zip` — Docker-only bundle (`Dockerfile` / `docker-compose.yml` / `.dockerignore` / `.env.example`)
+- No prebuilt container image is published (the release environment has no Docker runtime); build it with `docker compose up -d --build`
+
+
 ### v1.1.2 — 2026-11-15
 
 **Fixes**
