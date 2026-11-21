@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "node app.js",
-    "export": "node scripts/export.js"
+    "export": "node scripts/export.js",
+    "check": "node scripts/check.js"
   },
   "dependencies": {
     "archiver": "^7.0.1",
