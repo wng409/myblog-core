@@ -6,7 +6,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-v22_LTS-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![Version](https://img.shields.io/badge/version-v1.1.2-blue.svg)](https://atomgit.com/wng409/myblog-core/releases)
+[![Version](https://img.shields.io/badge/version-v1.2.0-blue.svg)](https://atomgit.com/wng409/myblog-core/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 **Language / 语言:** [English](README.md) | [简体中文](README.zh-CN.md)
@@ -439,6 +439,35 @@ node -e "const a=Object.keys(require('./lib/i18n/zh.js')),b=Object.keys(require(
 **Contribution flow**: fork → create a branch → add or update the language file → open a PR against `main`, stating the language and how complete the translation is.
 
 ## Changelog
+
+### v1.2.0 — 2026-11-21
+
+**Security**
+
+- Migrated CSRF from the archived `csurf` to `csrf-sync` (Synchronizer Token Pattern). Tokens live in the session; normal forms only accept body/header tokens, and `?_csrf=` is accepted **only for multipart** uploads (CSRF must run before multer).
+- Removed the `role` column — the project is single-user, so every logged-in user is an administrator (old databases migrate automatically on startup).
+- Password policy: at least 10 characters with two character classes; changing the password invalidates other sessions while keeping the current one logged in.
+- Upload hardening: magic-byte verification on every image path (including site settings) and `crypto.randomBytes` filenames.
+- `sanitizeUrl` rejects quotes, brackets, backticks and whitespace; social links enforce a type whitelist.
+
+**Data integrity**
+
+- Non-string body fields (arrays/objects) are dropped instead of being silently written as `[object Object]`.
+- Title/content are required on create; edits are **partial updates** (unsubmitted fields keep their values, an empty slug never rewrites the permalink).
+- Delete/restore/purge/empty check `this.changes` and no longer report success for missing rows.
+- Banner titles may contain `<`/`>` (stored as-is, escaped on output); `bannerItems` JSON is no longer sanitized as HTML.
+- Email social links accept a bare address and are stored as `mailto:`.
+
+**Static site & UX**
+
+- `<body data-static>` is emitted again, restoring static-site search, tag filtering, sorting and pagination; `main.js` no longer hijacks Enter on static pages.
+- Flash messages are filtered (length/tags/URLs); `toast.js` no longer duplicates `hm-ui` dialogs.
+- Carousel dots are real buttons; `<html lang>` follows the site language; `SITE_TZ` is configurable.
+
+**Performance & maintenance**
+
+- Tag pool cache (60 s), admin list pagination (20/page), async orphan cleanup with `?dryRun=1`.
+- `npm run check` validates every JS/EJS file; `lib/render.js` holds the single `fmtTime` implementation.
 
 ### v1.1.2 — 2026-11-15
 

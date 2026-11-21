@@ -6,7 +6,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-v22_LTS-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![Version](https://img.shields.io/badge/version-v1.1.2-blue.svg)](https://atomgit.com/wng409/myblog-core/releases)
+[![Version](https://img.shields.io/badge/version-v1.2.0-blue.svg)](https://atomgit.com/wng409/myblog-core/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 **Language / 语言:** [English](README.md) | [简体中文](README.zh-CN.md)
@@ -438,6 +438,35 @@ node -e "const a=Object.keys(require('./lib/i18n/zh.js')),b=Object.keys(require(
 **贡献流程**：fork → 新建分支 → 添加或更新语言文件 → 向 `main` 提交 PR，并说明语言种类与翻译完整度。
 
 ## 更新记录
+
+### v1.2.0 — 2026-11-21
+
+**安全**
+
+- CSRF 从已归档的 `csurf` 迁移到 `csrf-sync`（Synchronizer Token Pattern）。令牌存在 session；普通表单只接受 body/header，`?_csrf=` **仅 multipart** 可用（CSRF 必须早于 multer）。
+- 删除 `role` 字段——项目为单用户模型，登录即管理员（老库启动时自动迁移）。
+- 密码策略：至少 10 位且包含两类字符；改密后其它会话失效，当前会话保持登录。
+- 上传加固：所有图片入口（含站点设置）校验文件头，文件名改用 `crypto.randomBytes`。
+- `sanitizeUrl` 拒绝引号/括号/反引号/空白；社交链接强制类型白名单。
+
+**数据完整性**
+
+- 数组/对象字段直接丢弃，不再被静默写成 `[object Object]`。
+- 新建强制标题/正文；编辑改为**部分更新**（未提交字段保持原值，空 slug 不改 permalink）。
+- 删除/恢复/永久删除/清空检查 `this.changes`，不存在的记录不再提示成功。
+- Banner 标题允许 `<`/`>`（存原文、输出转义）；`bannerItems` JSON 不再被当作 HTML 清洗。
+- Email 社交链接接受裸邮箱并自动存为 `mailto:`。
+
+**静态站与体验**
+
+- 恢复输出 `<body data-static>`，静态站搜索/标签/排序/分页重新生效；静态站不再被 `main.js` 劫持回车跳转。
+- 提示文案过滤（长度/标签/URL）；`toast.js` 不再与 `hm-ui` 重复弹窗。
+- 轮播圆点改为按钮；`<html lang>` 跟随语言；`SITE_TZ` 可配置。
+
+**性能与维护**
+
+- 标签池缓存（60 秒）、后台列表分页（20 条/页）、孤儿清理异步化并支持 `?dryRun=1`。
+- `npm run check` 检查全部 JS/EJS；`lib/render.js` 统一 `fmtTime` 实现。
 
 ### v1.1.2 — 2026-11-15
 
