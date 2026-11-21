@@ -81,7 +81,12 @@ const UPLOADS_DIR = path.join(PUBLIC_DIR, 'uploads');
   try { fs.mkdirSync(path.join(ROOT_DIR, dir), { recursive: true }); } catch (e) {}
 });
 
-app.set('trust proxy', 1);
+// 默认不信任任何代理头：直连部署时伪造 X-Forwarded-For 无效，限流与日志才可信。
+// 反代部署（Nginx / Cloudflare Tunnel）时在 .env 里设置 TRUST_PROXY=1（或实际跳数）。
+const TRUST_PROXY = process.env.TRUST_PROXY;
+if (TRUST_PROXY) {
+  app.set('trust proxy', /^\d+$/.test(TRUST_PROXY) ? Number(TRUST_PROXY) : TRUST_PROXY);
+}
 
 // ============================================================
 // 数据库初始化
@@ -428,7 +433,7 @@ const loginLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
-    const clientIp = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress;
+    const clientIp = req.ip || req.socket.remoteAddress;
     users.writeLog(db, {
       userId: null,
       username: (req.body && req.body.username) || '(空)',
@@ -468,6 +473,13 @@ const authOnly = (req, res, next) => {
         res.redirect('/admin/login');
       });
     }
+    // 密码已变更：其它设备上的会话立即失效（pwdTag 由 updatePassword 维护）
+    if (user.pwd_tag && req.session.user.pwdTag !== user.pwd_tag) {
+      return req.session.destroy(() => {
+        res.clearCookie('connect.sid');
+        res.redirect('/admin/login');
+      });
+    }
     if (user.username !== req.session.user.username) {
       req.session.user.username = user.username;
     }
@@ -477,6 +489,20 @@ const authOnly = (req, res, next) => {
 
 const authAndCsrf = [authOnly, csrfProtection];
 
+// 密码强度：>=10 位，且至少包含两类字符（小写/大写/数字/符号）
+function passwordIssue(pwd) {
+  if (typeof pwd !== 'string' || pwd.length < 10) return 'short';
+  const kinds = [/[a-z]/, /[A-Z]/, /[0-9]/, /[^a-zA-Z0-9]/].filter((re) => re.test(pwd)).length;
+  if (kinds < 2) return 'weak';
+  return '';
+}
+
+// 仅管理员：设置、删除/恢复/清空、导出、审计日志
+const adminOnly = (req, res, next) => {
+  if (req.session && req.session.user && req.session.user.role === 'admin') return next();
+  return res.status(403).send(i18n.t(currentLang, 'admin.err.forbidden'));
+};
+
 // ========== XSS 清理 ==========
 const sanitizeString = (str) => {
   if (typeof str !== 'string') return str;
@@ -484,13 +510,17 @@ const sanitizeString = (str) => {
 };
 
 // URL 白名单：仅允许站内相对路径（/ 开头）或 https:// 绝对地址
+// 同时拒绝引号 / 括号 / 反引号 / 空白 / 控制字符，避免在 CSS url() 或 HTML 属性中闭合逃逸
+const UNSAFE_URL_CHARS = /[\u0000-\u001F\u007F"'`()\\\s]/;
+const SAFE_REL_PATH = /^[\/\w\-.%?&=#~:@+\u4e00-\u9fa5]+$/;
+const SAFE_HTTPS_URL = /^https:\/\/[\w\-.:\/@?&=#~%+\u4e00-\u9fa5]+$/i;
 const sanitizeUrl = (url) => {
   if (typeof url !== 'string') return '';
   const s = url.trim();
-  if (!s) return '';
+  if (!s || UNSAFE_URL_CHARS.test(s)) return '';
   if (/^[\/\\]{2}/.test(s)) return '';   // 拒绝协议相对 URL（//、/\、\\、\/）
-  if (s.startsWith('/')) return s;
-  if (/^https:\/\//i.test(s)) return s;
+  if (s.startsWith('/')) return SAFE_REL_PATH.test(s) ? s : '';
+  if (SAFE_HTTPS_URL.test(s)) return s;
   return '';
 };
 
@@ -788,7 +818,7 @@ app.get('/admin/login', (req, res) => {
 
 app.post('/admin/login', loginLimiter, (req, res) => {
   const { username, password } = req.body;
-  const clientIp = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress;
+  const clientIp = req.ip || req.socket.remoteAddress;
   const clientUA = req.headers['user-agent'] || '';
 
   const fail = (msg) => {
@@ -820,7 +850,12 @@ app.post('/admin/login', loginLimiter, (req, res) => {
 
     req.session.regenerate((regenErr) => {
       if (regenErr) { console.error('Session regenerate error:', regenErr); return res.status(500).send(i18n.t(currentLang, 'auth.failed')); }
-      req.session.user = { id: user.id, username: user.username, role: user.role };
+      req.session.user = {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        pwdTag: user.pwd_tag || null
+      };
 
       users.updateLastLogin(db, user.id, () => {
         users.writeLog(db, {
@@ -885,7 +920,9 @@ app.post('/admin/profile/password', authAndCsrf, (req, res) => {
   if (!oldPassword || !newPassword || !confirmPassword) {
     return res.redirect('/admin/profile?err=' + encodeURIComponent(i18n.t(currentLang, 'profile.err.allFieldsRequired')));
   }
-  if (newPassword.length < 6) return res.redirect('/admin/profile?err=' + encodeURIComponent(i18n.t(currentLang, 'profile.err.passwordTooShort')));
+  const pwdIssue = passwordIssue(newPassword);
+  if (pwdIssue === 'short') return res.redirect('/admin/profile?err=' + encodeURIComponent(i18n.t(currentLang, 'profile.err.passwordTooShort')));
+  if (pwdIssue === 'weak') return res.redirect('/admin/profile?err=' + encodeURIComponent(i18n.t(currentLang, 'profile.err.passwordWeak')));
   if (newPassword !== confirmPassword) return res.redirect('/admin/profile?err=' + encodeURIComponent(i18n.t(currentLang, 'profile.err.passwordMismatch')));
 
   users.findUserById(db, req.session.user.id, (err, user) => {
@@ -1011,7 +1048,7 @@ app.post('/admin/posts/:id', authOnly, csrfProtection, upload.single('cover_imag
   });
 });
 
-app.post('/admin/posts/delete/:id', authAndCsrf, (req, res) => {
+app.post('/admin/posts/delete/:id', authAndCsrf, adminOnly, (req, res) => {
   db.run(
     `UPDATE posts SET deleted_at = CURRENT_TIMESTAMP,
        slug = COALESCE(slug,'') || '__deleted_' || strftime('%s','now')
@@ -1039,7 +1076,7 @@ app.get('/admin/posts/trash', authOnly, csrfProtection, (req, res) => {
   });
 });
 
-app.post('/admin/posts/restore/:id', authAndCsrf, (req, res) => {
+app.post('/admin/posts/restore/:id', authAndCsrf, adminOnly, (req, res) => {
   getDeletedPostById(req.params.id, (err, post) => {
     if (err || !post) return res.redirect('/admin/posts/trash?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.err.notFound')));
     const baseSlug = post.slug || '';
@@ -1063,7 +1100,7 @@ app.post('/admin/posts/restore/:id', authAndCsrf, (req, res) => {
   });
 });
 
-app.post('/admin/posts/purge/:id', authAndCsrf, (req, res) => {
+app.post('/admin/posts/purge/:id', authAndCsrf, adminOnly, (req, res) => {
   getDeletedPostById(req.params.id, (err, post) => {
     if (err || !post) return res.redirect('/admin/posts/trash?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.err.notFound')));
     db.run('DELETE FROM posts WHERE id = ? AND deleted_at IS NOT NULL', [req.params.id], function (err) {
@@ -1075,7 +1112,7 @@ app.post('/admin/posts/purge/:id', authAndCsrf, (req, res) => {
   });
 });
 
-app.post('/admin/posts/trash/empty', authAndCsrf, (req, res) => {
+app.post('/admin/posts/trash/empty', authAndCsrf, adminOnly, (req, res) => {
   db.all('SELECT * FROM posts WHERE deleted_at IS NOT NULL', (err, posts) => {
     if (err) posts = [];
     db.run('DELETE FROM posts WHERE deleted_at IS NOT NULL', function (err) {
@@ -1106,7 +1143,7 @@ app.post('/admin/posts/trash/clean-orphans', authAndCsrf, (req, res) => {
 // ============================================================
 // 首页设置
 // ============================================================
-app.get('/admin/settings', authOnly, csrfProtection, (req, res) => {
+app.get('/admin/settings', authOnly, csrfProtection, adminOnly, (req, res) => {
   getSetting((err, setting) => {
     if (err) return res.status(500).send(i18n.t(currentLang, 'admin.settings.err.dbError'));
     const bannerRaw   = (setting && setting.banner_images) || '[]';
@@ -1138,7 +1175,7 @@ app.get('/admin/site', authOnly, csrfProtection, (req, res) => {
   });
 });
 
-app.post('/admin/settings/language', authOnly, csrfProtection, (req, res) => {
+app.post('/admin/settings/language', authOnly, csrfProtection, adminOnly, (req, res) => {
   const lang = (req.body.site_lang || '').trim();
   if (!i18n.LANGS.includes(lang)) {
     return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.err.unsupportedLang')));
@@ -1218,7 +1255,7 @@ const siteFormUpload = upload.fields([
 ]);
 
 // csrfProtection 必须放在 multer 之前：未通过 CSRF 校验的请求不应先落盘
-app.post('/admin/settings/site', authOnly, csrfProtection, siteFormUpload, (req, res) => {
+app.post('/admin/settings/site', authOnly, csrfProtection, adminOnly, siteFormUpload, (req, res) => {
   const sets = [], vals = [];
   // 大表单中的图片文件（若已选择则覆盖对应字段）
   const logoFile = req.files && req.files.site_logo_file && req.files.site_logo_file[0];
@@ -1266,8 +1303,8 @@ function handleSettingImage(field, column) {
 }
 
 // 同上：csrfProtection 在 multer 之前
-app.post('/admin/settings/upload-logo', authOnly, csrfProtection, upload.single('logo'), handleSettingImage('upload_logo', 'site_logo'));
-app.post('/admin/settings/upload-avatar', authOnly, csrfProtection, upload.single('avatar'), handleSettingImage('upload_avatar', 'about_avatar'));
+app.post('/admin/settings/upload-logo', authOnly, csrfProtection, adminOnly, upload.single('logo'), handleSettingImage('upload_logo', 'site_logo'));
+app.post('/admin/settings/upload-avatar', authOnly, csrfProtection, adminOnly, upload.single('avatar'), handleSettingImage('upload_avatar', 'about_avatar'));
 
 // ============================================================
 // 静态站导出（一键生成 / 打包下载）
@@ -1286,7 +1323,7 @@ app.post('/admin/export-build', authOnly, csrfProtection, (req, res) => {
   });
 });
 
-app.get('/admin/export-download', authOnly, (req, res) => {
+app.get('/admin/export-download', authOnly, adminOnly, (req, res) => {
   const distDir = path.join(ROOT_DIR, 'dist');
   if (!fs.existsSync(distDir)) {
     return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.export.noDist')));
@@ -1304,7 +1341,7 @@ app.get('/admin/export-download', authOnly, (req, res) => {
   logAction(req, 'export_download', 'dist');
 });
 
-app.post('/admin/settings', authOnly, csrfProtection, (req, res) => {
+app.post('/admin/settings', authOnly, csrfProtection, adminOnly, (req, res) => {
   const { bannerItems, featuredIds } = req.body;
 
   // 关键：只有"显式传了该字段"才更新对应列，未传的字段保持库中原值，
@@ -1363,7 +1400,7 @@ app.post('/admin/settings', authOnly, csrfProtection, (req, res) => {
   });
 });
 
-app.post('/admin/settings/banner', authOnly, csrfProtection, (req, res) => {
+app.post('/admin/settings/banner', authOnly, csrfProtection, adminOnly, (req, res) => {
   let parsed;
   try {
     parsed = typeof req.body.bannerItems === 'string'
@@ -1406,7 +1443,7 @@ app.post('/admin/settings/banner', authOnly, csrfProtection, (req, res) => {
 // ============================================================
 // 操作日志
 // ============================================================
-app.get('/admin/logs', authOnly, csrfProtection, (req, res) => {
+app.get('/admin/logs', authOnly, csrfProtection, adminOnly, (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const pageSize = 50;
   const offset = (page - 1) * pageSize;
