@@ -1455,8 +1455,14 @@ app.get('/admin/logs', authOnly, csrfProtection, (req, res) => {
   const where = [];
   const params = [];
   if (filterAction) { where.push('action = ?');      params.push(filterAction); }
-  if (filterUser)   { where.push('username LIKE ?'); params.push(`%${filterUser}%`); }
-  if (filterIp)     { where.push('ip LIKE ?');       params.push(`%${filterIp}%`); }
+  if (filterUser) {
+    where.push("username LIKE ? ESCAPE '\\'");
+    params.push(`%${escapeLike(filterUser.slice(0, 100))}%`);
+  }
+  if (filterIp) {
+    where.push("ip LIKE ? ESCAPE '\\'");
+    params.push(`%${escapeLike(filterIp.slice(0, 100))}%`);
+  }
   const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
 
   db.get(`SELECT COUNT(*) AS c FROM logs ${whereSql}`, params, (err, row) => {
