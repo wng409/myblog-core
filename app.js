@@ -297,26 +297,35 @@ function purgeOrphanUploads(triggeredBy, callback) {
     if (callback) callback({ deleted: 0, freedBytes: 0 });
     return;
   }
-  collectReferencedImages((refs) => {
+  collectReferencedImages(async (refs) => {
     const now = Date.now();
     let deleted = 0, freedBytes = 0;
-    const walk = (dir) => {
+    const files = [];
+
+    // 异步遍历：不再 readdirSync/statSync 阻塞事件循环
+    async function walk(dir) {
       let entries;
-      try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
+      try { entries = await fs.promises.readdir(dir, { withFileTypes: true }); }
       catch (e) { return; }
       for (const entry of entries) {
         const full = path.join(dir, entry.name);
-        if (entry.isDirectory()) { walk(full); continue; }
+        if (entry.isDirectory()) { await walk(full); continue; }
         let stat;
-        try { stat = fs.statSync(full); } catch (e) { continue; }
+        try { stat = await fs.promises.stat(full); } catch (e) { continue; }
         if (now - stat.mtimeMs < ORPHAN_MIN_AGE_MS) continue;
-        const rel = '/' + path.relative(PUBLIC_DIR, full).replace(/\\/g, '/');
-        if (!refs.has(rel)) {
-          try { fs.unlinkSync(full); deleted++; freedBytes += stat.size; } catch (e) {}
-        }
+        files.push({ full, size: stat.size });
       }
-    };
-    walk(UPLOADS_DIR);
+    }
+    await walk(UPLOADS_DIR);
+
+    for (let i = 0; i < files.length; i++) {
+      const item = files[i];
+      const rel = '/' + path.relative(PUBLIC_DIR, item.full).replace(/\\/g, '/');
+      if (refs.has(rel)) continue;
+      try { await fs.promises.unlink(item.full); deleted++; freedBytes += item.size; } catch (e) {}
+      if (i > 0 && i % 50 === 0) await new Promise((r) => setImmediate(r));
+    }
+
     if (deleted > 0) {
       const mb = (freedBytes / 1024 / 1024).toFixed(2);
       console.log(`[孤儿清理] ${deleted} 个 / ${mb} MB（触发：${triggeredBy}）`);
@@ -626,18 +635,40 @@ app.post('/admin/upload/image', authOnly, csrfProtection, upload.single('image')
 // 列表/卡片场景所需字段（不含正文 content，避免列表查询白读全文）
 const POST_LIST_FIELDS = 'id, title, slug, tags, cover_image, bilibili_embed, created_at, updated_at';
 
-const getPosts = (cb) => db.all(`SELECT ${POST_LIST_FIELDS} FROM posts WHERE deleted_at IS NULL ORDER BY created_at DESC`, cb);
+const POSTS_PER_PAGE = 20;
+// 后台列表分页：COUNT + LIMIT/OFFSET（原来是无 LIMIT 的全量查询）
+const getPostsPage = (page, size, cb) => {
+  const limit = Math.max(1, Number(size) || POSTS_PER_PAGE);
+  const offset = (Math.max(1, Number(page) || 1) - 1) * limit;
+  db.get('SELECT COUNT(*) AS c FROM posts WHERE deleted_at IS NULL', (e0, row) => {
+    const total = row ? row.c : 0;
+    db.all(
+      `SELECT ${POST_LIST_FIELDS} FROM posts WHERE deleted_at IS NULL
+        ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      [limit, offset],
+      (err, rows) => cb(err, rows || [], total, limit)
+    );
+  });
+};
 const getPostBySlug = (slug, cb) => db.get('SELECT * FROM posts WHERE slug = ? AND deleted_at IS NULL', [slug], cb);
 const getPostById = (id, cb) => db.get('SELECT * FROM posts WHERE id = ? AND deleted_at IS NULL', [id], cb);
 const getSetting = (cb) => db.get('SELECT * FROM settings WHERE id = 1', cb);
+// 标签池缓存：60s 内复用；文章增删改后主动失效
+let allTagsCache = { at: 0, data: null };
+function invalidateAllTagsCache() { allTagsCache = { at: 0, data: null }; }
 const getAllTags = (cb) => {
+  if (allTagsCache.data && Date.now() - allTagsCache.at < 60000) {
+    return cb(null, allTagsCache.data.slice());
+  }
   db.all('SELECT tags FROM posts WHERE deleted_at IS NULL', (err, rows) => {
     if (err) return cb(err);
     const tagSet = new Set();
     rows.forEach(row => {
       parseTags(row.tags).forEach(t => tagSet.add(t));
     });
-    cb(null, Array.from(tagSet));
+    const list = Array.from(tagSet);
+    allTagsCache = { at: Date.now(), data: list };
+    cb(null, list.slice());
   });
 };
 const getTrashPosts = (cb) => db.all(`SELECT ${POST_LIST_FIELDS}, deleted_at FROM posts WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC`, cb);
@@ -943,11 +974,14 @@ app.post('/admin/profile/password', authAndCsrf, (req, res) => {
 // 后台首页（文章管理）
 // ============================================================
 app.get('/admin', authOnly, csrfProtection, (req, res) => {
-  getPosts((err, posts) => {
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  getPostsPage(page, POSTS_PER_PAGE, (err, posts, total, size) => {
     if (err) posts = [];
-    countTrash((err, row) => {
+    const totalPages = Math.max(1, Math.ceil(total / size));
+    countTrash((err2, row) => {
       res.render('admin/dashboard', {
         layout: false, posts, trashCount: row ? row.c : 0,
+        page, totalPages, total,
         message: req.query.msg || null, error: req.query.err || null,
         csrfToken: req.csrfToken()
       });
@@ -1007,6 +1041,7 @@ app.post('/admin/posts', authOnly, csrfProtection, upload.single('cover_image'),
         }
         return res.status(500).send(i18n.t(currentLang, 'posts.err.saveFailed'));
       }
+      invalidateAllTagsCache();
       logAction(req, 'create_post', `post:${this.lastID}`);
       res.redirect('/admin?msg=' + encodeURIComponent(i18n.t(currentLang, 'posts.msg.published')));
     }
@@ -1040,7 +1075,8 @@ app.post('/admin/posts/:id', authOnly, csrfProtection, upload.single('cover_imag
           }
           return res.status(500).send(i18n.t(currentLang, 'posts.err.updateFailed'));
         }
-        logAction(req, 'update_post', `post:${req.params.id}`);
+        invalidateAllTagsCache();
+      logAction(req, 'update_post', `post:${req.params.id}`);
         deleteRemovedImages(oldPost, newCover, content, req);
         res.redirect('/admin?msg=' + encodeURIComponent(i18n.t(currentLang, 'posts.msg.updated')));
       }
@@ -1056,6 +1092,7 @@ app.post('/admin/posts/delete/:id', authAndCsrf, (req, res) => {
     [req.params.id],
     function (err) {
       if (err) return res.status(500).send(i18n.t(currentLang, 'posts.err.deleteFailed'));
+      invalidateAllTagsCache();
       logAction(req, 'delete_post', `post:${req.params.id}`);
       res.redirect('/admin?msg=' + encodeURIComponent(i18n.t(currentLang, 'posts.msg.deleted')));
     }
@@ -1088,7 +1125,8 @@ app.post('/admin/posts/restore/:id', authAndCsrf, (req, res) => {
         if (err) {
           db.run('UPDATE posts SET deleted_at = NULL WHERE id = ?', [req.params.id], (e2) => {
             if (e2) return res.redirect('/admin/posts/trash?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.trash.err.restoreFailed')));
-            logAction(req, 'restore_post', `post:${req.params.id}`);
+            invalidateAllTagsCache();
+      logAction(req, 'restore_post', `post:${req.params.id}`);
             res.redirect('/admin/posts/trash?msg=' + encodeURIComponent(i18n.t(currentLang, 'posts.trash.msg.restoredWithSuffix')));
           });
           return;
@@ -1105,6 +1143,7 @@ app.post('/admin/posts/purge/:id', authAndCsrf, (req, res) => {
     if (err || !post) return res.redirect('/admin/posts/trash?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.err.notFound')));
     db.run('DELETE FROM posts WHERE id = ? AND deleted_at IS NOT NULL', [req.params.id], function (err) {
       if (err) return res.redirect('/admin/posts/trash?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.trash.err.purgeFailed')));
+      invalidateAllTagsCache();
       logAction(req, 'purge_post', `post:${post.id}`);
       deleteRemovedImages(post, '', '', req);
       res.redirect('/admin/posts/trash?msg=' + encodeURIComponent(i18n.t(currentLang, 'posts.trash.msg.purged')));
@@ -1117,6 +1156,7 @@ app.post('/admin/posts/trash/empty', authAndCsrf, (req, res) => {
     if (err) posts = [];
     db.run('DELETE FROM posts WHERE deleted_at IS NOT NULL', function (err) {
       if (err) return res.redirect('/admin/posts/trash?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.trash.err.emptyFailed')));
+      invalidateAllTagsCache();
       logAction(req, 'empty_trash', `posts`);
       posts.forEach(p => deleteRemovedImages(p, '', '', req));
       res.redirect('/admin/posts/trash?msg=' + encodeURIComponent(i18n.t(currentLang, 'posts.trash.msg.emptied')));

@@ -67,6 +67,18 @@
     <% } else { %>
       <p class="empty-tip"><%= t('admin.posts.empty') %></p>
     <% } %>
+
+    <% if (typeof totalPages !== 'undefined' && totalPages > 1) { %>
+      <nav class="admin-pagination" aria-label="pagination">
+        <% if (page > 1) { %>
+          <a class="page-btn" href="/admin?page=<%= page - 1 %>" aria-label="prev">‹</a>
+        <% } %>
+        <span class="page-info"><%= page %> / <%= totalPages %>（<%= total %>）</span>
+        <% if (page < totalPages) { %>
+          <a class="page-btn" href="/admin?page=<%= page + 1 %>" aria-label="next">›</a>
+        <% } %>
+      </nav>
+    <% } %>
   </div>
   <%- include('../partials/admin-shell-end') %>
 

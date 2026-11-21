@@ -2366,3 +2366,26 @@ input[type="color"] {
     right: auto;
   }
 }
+
+/* 后台列表分页（文章 / 日志等） */
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+.admin-pagination .page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e5e7eb);
+  color: var(--text, #1f2329);
+  text-decoration: none;
+  transition: background .2s, border-color .2s;
+}
+.admin-pagination .page-btn:hover { background: var(--surface-muted, #f3f4f6); border-color: var(--brand-color, #e60012); }
+.admin-pagination .page-info { font-size: 13px; color: var(--text-faint, #8f959e); }
