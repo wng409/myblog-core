@@ -19,6 +19,7 @@
  *   - 与闭源版差异（core 极简）：无 moments、无 banner/featured 独立查询、无 mc/hutao；posts 无多用户 author 字段。
  */
 
+require('dotenv').config();   // 与 app.js 一致：让 SITE_TZ 等环境变量生效
 const path = require('path');
 const fs = require('fs');
 const ejs = require('ejs');
@@ -53,27 +54,8 @@ const t = (key) => i18n.t(LANG, key);       // 导出期翻译函数（注入模
 const md = new MarkdownIt({ html: false, linkify: true });
 const DOMPurify = createDOMPurify(new JSDOM('').window);
 
-// ============================================================
-// fmtTime：与 app.js app.locals.fmtTime 逐字一致（app.js:342）
-// ============================================================
-const fmtTime = function (t) {
-  if (!t) return '';
-  let iso = String(t).trim();
-  if (!iso.includes('T')) iso = iso.replace(' ', 'T');
-  if (!/[Z+]/.test(iso)) iso += 'Z';
-  const d = new Date(iso);
-  if (isNaN(d)) return t;
-
-  const parts = new Intl.DateTimeFormat('zh-CN', {
-    timeZone: (process.env.SITE_TZ || 'Asia/Shanghai'),
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-    hour12: false
-  }).formatToParts(d);
-
-  const get = type => parts.find(p => p.type === type).value;
-  return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
-};
+// 时间格式化：与 app.js 共用 lib/render.js 的唯一实现
+const { fmtTime } = require('../lib/render');
 
 // ============================================================
 // 工具函数

@@ -459,27 +459,9 @@ app.use(expressLayouts);
 app.set('layout', 'layouts/layout');
 app.locals.siteName = process.env.SITE_NAME || 'MyBlog';
 
-// ========== 时间格式化 ==========
-const SITE_TZ = process.env.SITE_TZ || 'Asia/Shanghai';
-
-app.locals.fmtTime = function (t) {
-  if (!t) return '';
-  let iso = String(t).trim();
-  if (!iso.includes('T')) iso = iso.replace(' ', 'T');
-  if (!/[Z+]/.test(iso)) iso += 'Z';
-  const d = new Date(iso);
-  if (isNaN(d)) return t;
-
-  const parts = new Intl.DateTimeFormat('zh-CN', {
-    timeZone: SITE_TZ,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-    hour12: false
-  }).formatToParts(d);
-
-  const get = type => parts.find(p => p.type === type).value;
-  return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
-};
+// ========== 时间格式化（实现见 lib/render.js，与 SSG 共用） ==========
+const { fmtTime } = require('./lib/render');
+app.locals.fmtTime = fmtTime;
 
 // ========== 登录限流 ==========
 const loginLimiter = rateLimit({
