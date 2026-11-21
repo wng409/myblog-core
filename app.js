@@ -740,7 +740,12 @@ app.get('/posts', (req, res) => {
     whereSql += " AND (',' || tags || ',') LIKE ? ESCAPE '\\'";
     params.push(`%,${escapeLike(tag)},%`);
   }
-  if (search) { whereSql += ' AND (title LIKE ? OR content LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
+  if (search) {
+    // 转义 LIKE 通配符并限制长度，避免用户输入 % / _ 放大匹配范围
+    const kw = `%${escapeLike(String(search).slice(0, 100))}%`;
+    whereSql += " AND (title LIKE ? ESCAPE '\\' OR content LIKE ? ESCAPE '\\')";
+    params.push(kw, kw);
+  }
 
   // 1) 先查总数，算总页数
   db.get(`SELECT COUNT(*) AS total FROM posts${whereSql}`, params, (err, row) => {
