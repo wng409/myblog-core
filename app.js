@@ -21,7 +21,7 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
 const rateLimit = require('express-rate-limit');
-const csrf = require('csurf');
+const { csrfSync } = require('csrf-sync');
 const createDOMPurify = require('dompurify');
 const { JSDOM } = require('jsdom');
 
@@ -503,19 +503,23 @@ const loginLimiter = rateLimit({
 });
 
 // ========== CSRF ==========
-const csrfProtection = csrf({
-  cookie: {
-    httpOnly: true,
-    secure: IS_PRODUCTION,
-    sameSite: 'lax'
-  },
-  value: (req) => {
-    return req.headers['csrf-token'] ||
-           req.headers['x-csrf-token'] ||
-           (req.body && req.body._csrf) ||
-           (req.query && req.query._csrf);
+// token 存在 req.session.csrfToken；登录页不挂载（登录 CSRF 的已知取舍）。
+// 取 token 顺序：header → body → 仅 multipart 读 query。
+// multipart 的 body 要等 multer 解析，而 CSRF 必须排在 multer 之前（防未授权文件落盘），
+// 因此只有 multipart 表单可以把 token 放在 action 的 query 上。
+const { csrfSynchronisedProtection } = csrfSync({
+  size: 32,
+  getTokenFromRequest: (req) => {
+    const header = req.headers['x-csrf-token'] || req.headers['csrf-token'];
+    if (typeof header === 'string' && header) return header;
+    if (req.body && typeof req.body._csrf === 'string' && req.body._csrf) return req.body._csrf;
+    if (req.is && req.is('multipart/form-data')) {
+      return typeof req.query._csrf === 'string' ? req.query._csrf : undefined;
+    }
+    return undefined;
   }
 });
+const csrfProtection = csrfSynchronisedProtection;
 
 // ========== 认证 ==========
 const authOnly = (req, res, next) => {
