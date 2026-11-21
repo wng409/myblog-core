@@ -1056,8 +1056,10 @@ app.post('/admin/profile/password', authAndCsrf, (req, res) => {
       logAction(req, 'password_change_fail', `user:${user.id}`);
       return res.redirect('/admin/profile?err=' + encodeURIComponent(i18n.t(currentLang, 'profile.err.oldPasswordWrong')));
     }
-    users.updatePassword(db, user.id, newPassword, (err) => {
+    users.updatePassword(db, user.id, newPassword, (err, newTag) => {
       if (err) return res.redirect('/admin/profile?err=' + encodeURIComponent(i18n.t(currentLang, 'profile.err.updateFailed')));
+      // 同步当前会话的 pwdTag，否则 authOnly 会把自己也踢下线
+      if (newTag && req.session.user) req.session.user.pwdTag = newTag;
       logAction(req, 'change_password', `user:${user.id}`);
       res.redirect('/admin/profile?msg=' + encodeURIComponent(i18n.t(currentLang, 'profile.msg.passwordChanged')));
     });
@@ -1158,7 +1160,8 @@ app.post('/admin/posts/:id', authOnly, csrfProtection, upload.single('cover_imag
   getPostById(req.params.id, (err, oldPost) => {
     if (err || !oldPost) return res.status(404).send(i18n.t(currentLang, 'posts.err.notFound'));
 
-    // 标题保留原文（全局中间件已跳过 title）；其余字段已由全局清洗处理
+    // 部分更新：只写本次提交过的字段，未提交的保持原值（不重算 slug、不清空 tags）
+    const has = (k) => Object.prototype.hasOwnProperty.call(req.body, k);
     const title = sanitizePlainText(asString(req.body.title, 200));
     const slug = asString(req.body.slug, 80);
     const content = typeof req.body.content === 'string' ? req.body.content : '';
@@ -1166,18 +1169,46 @@ app.post('/admin/posts/:id', authOnly, csrfProtection, upload.single('cover_imag
     const bilibili_embed = asString(req.body.bilibili_embed, 500);
     const existing_cover = asString(req.body.existing_cover, 300);
     const cover_image_url = asString(req.body.cover_image_url, 300);
-    const finalSlug = toSafeSlug(slug, title);
     const now = new Date().toISOString();
     const safeBilibili = sanitizeUrl(bilibili_embed);
     const cleanTags = normalizeTags(tags);
 
+    const sets = [];
+    const params = [];
+
+    if (has('title')) {
+      if (!title) {
+        return res.redirect(`/admin/posts/edit/${req.params.id}?err=` + encodeURIComponent(i18n.t(currentLang, 'posts.err.titleRequired')));
+      }
+      sets.push('title=?'); params.push(title);
+    }
+    // 空 slug 视为「不修改」，只有显式提交非空 slug 才改 permalink
+    if (has('slug') && slug) {
+      sets.push('slug=?'); params.push(toSafeSlug(slug, ''));
+    }
+    if (has('content')) {
+      if (!content.trim()) {
+        return res.redirect(`/admin/posts/edit/${req.params.id}?err=` + encodeURIComponent(i18n.t(currentLang, 'posts.err.contentRequired')));
+      }
+      sets.push('content=?'); params.push(content);
+    }
+    if (has('tags')) { sets.push('tags=?'); params.push(cleanTags); }
+    if (has('bilibili_embed')) { sets.push('bilibili_embed=?'); params.push(safeBilibili); }
+
     let newCover = sanitizeUrl(existing_cover);
     if (req.file) newCover = fileUrl(req.file);
     else if (cover_image_url) newCover = sanitizeUrl(cover_image_url);
+    const coverTouched = !!(req.file || has('cover_image_url') || has('existing_cover'));
+    if (coverTouched) { sets.push('cover_image=?'); params.push(newCover); }
+
+    if (!sets.length) {
+      return res.redirect(`/admin/posts/edit/${req.params.id}?err=` + encodeURIComponent(i18n.t(currentLang, 'posts.err.noFields')));
+    }
+    sets.push('updated_at=?'); params.push(now);
 
     db.run(
-      `UPDATE posts SET title=?, slug=?, content=?, tags=?, cover_image=?, bilibili_embed=?, updated_at=? WHERE id=? AND deleted_at IS NULL`,
-      [title, finalSlug, content, cleanTags, newCover, safeBilibili, now, req.params.id],
+      `UPDATE posts SET ${sets.join(', ')} WHERE id=? AND deleted_at IS NULL`,
+      [...params, req.params.id],
       function(err) {
         if (err) {
           console.error(err);
@@ -1186,9 +1217,18 @@ app.post('/admin/posts/:id', authOnly, csrfProtection, upload.single('cover_imag
           }
           return res.status(500).send(i18n.t(currentLang, 'posts.err.updateFailed'));
         }
+        if (!this.changes) {
+          return res.redirect(`/admin/posts/edit/${req.params.id}?err=` + encodeURIComponent(i18n.t(currentLang, 'posts.err.notFound')));
+        }
         invalidateAllTagsCache();
-      logAction(req, 'update_post', `post:${req.params.id}`);
-        deleteRemovedImages(oldPost, newCover, content, req);
+        logAction(req, 'update_post', `post:${req.params.id}`);
+        // 只用本次真正变化的字段判断图片引用，避免部分更新把正文图误删
+        deleteRemovedImages(
+          oldPost,
+          coverTouched ? newCover : oldPost.cover_image,
+          has('content') ? content : oldPost.content,
+          req
+        );
         res.redirect('/admin?msg=' + encodeURIComponent(i18n.t(currentLang, 'posts.msg.updated')));
       }
     );
@@ -1203,6 +1243,9 @@ app.post('/admin/posts/delete/:id', authAndCsrf, (req, res) => {
     [req.params.id],
     function (err) {
       if (err) return res.status(500).send(i18n.t(currentLang, 'posts.err.deleteFailed'));
+      if (!this.changes) {
+        return res.redirect('/admin?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.err.notFound')));
+      }
       invalidateAllTagsCache();
       logAction(req, 'delete_post', `post:${req.params.id}`);
       res.redirect('/admin?msg=' + encodeURIComponent(i18n.t(currentLang, 'posts.msg.deleted')));
@@ -1242,6 +1285,9 @@ app.post('/admin/posts/restore/:id', authAndCsrf, (req, res) => {
           });
           return;
         }
+        if (!this.changes) {
+          return res.redirect('/admin/posts/trash?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.err.notFound')));
+        }
         logAction(req, 'restore_post', `post:${req.params.id}`);
         res.redirect('/admin/posts/trash?msg=' + encodeURIComponent(i18n.t(currentLang, 'posts.trash.msg.restored')));
       }
@@ -1254,6 +1300,9 @@ app.post('/admin/posts/purge/:id', authAndCsrf, (req, res) => {
     if (err || !post) return res.redirect('/admin/posts/trash?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.err.notFound')));
     db.run('DELETE FROM posts WHERE id = ? AND deleted_at IS NOT NULL', [req.params.id], function (err) {
       if (err) return res.redirect('/admin/posts/trash?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.trash.err.purgeFailed')));
+      if (!this.changes) {
+        return res.redirect('/admin/posts/trash?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.err.notFound')));
+      }
       invalidateAllTagsCache();
       logAction(req, 'purge_post', `post:${post.id}`);
       deleteRemovedImages(post, '', '', req);
@@ -1378,9 +1427,14 @@ const SITE_FIELD_SETTERS = {
   social_links:    (v) => {
     // 类型白名单：未知类型降级为普通链接，绝不把任意字符串拼进 class/图标
     const ALLOWED = new Set(['github', 'email', 'bilibili', 'zhihu', 'x', 'telegram', 'wechat', 'link']);
-    const safeSocialUrl = (u) => {
+    const safeSocialUrl = (u, type) => {
       const raw = String(u || '').trim().slice(0, 300);
-      if (/^mailto:[^\s@]+@[^\s@]+$/i.test(raw)) return raw;
+      if (type === 'email') {
+        // 纯邮箱自动补 mailto:，已带前缀的保持原样
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) return 'mailto:' + raw;
+        if (/^mailto:[^\s@]+@[^\s@]+$/i.test(raw)) return raw;
+        return '';
+      }
       return sanitizeUrl(raw);
     };
     try {
@@ -1390,7 +1444,7 @@ const SITE_FIELD_SETTERS = {
         const type = String((it && it.type) || 'link').trim().slice(0, 20);
         return {
           type: ALLOWED.has(type) ? type : 'link',
-          url: safeSocialUrl(it && it.url)
+          url: safeSocialUrl(it && it.url, type)
         };
       }).filter((it) => it.url);
       return JSON.stringify(clean);
@@ -1694,7 +1748,8 @@ app.use((err, req, res, next) => {
     return next(err);
   }
 
-  console.error(err.stack);
+  // CSRF 拒绝属于预期的安全拒绝，不打印堆栈，避免扫描器刷爆日志
+  if (err.code !== 'EBADCSRFTOKEN') console.error(err.stack || err);
 
   const t = (k) => i18n.t(currentLang, k);
   const p = (obj) => users.errorPage({ lang: currentLang, ...obj });
