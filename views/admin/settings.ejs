@@ -11,6 +11,8 @@
   <%- include('../partials/brand-color') %>
 </head>
 <body data-csrf="<%= csrfToken %>" data-lang="<%= lang %>"
+      data-msg-upload-ok="<%= t('admin.settings.uploadOk') %>"
+      data-msg-upload-fail="<%= t('admin.settings.uploadFail') %>"
       data-upload-failed="<%= t('admin.banner.uploadFailed') %>"
       data-upload-invalid="<%= t('admin.banner.uploadInvalid') %>"
       data-banner-untitled="<%= t('admin.banner.untitled') %>"

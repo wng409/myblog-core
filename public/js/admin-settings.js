@@ -4,6 +4,13 @@
 
   var CSRF_TOKEN = document.body.dataset.csrf || '';
 
+  // 文案由模板按语言注入（data-*），避免前端硬编码中文绕过 i18n
+  var MSG = {
+    uploadOk: document.body.dataset.msgUploadOk || '图片上传成功',
+    uploadFail: document.body.dataset.msgUploadFail || '上传失败',
+    remove: document.body.dataset.msgRemove || '移除'
+  };
+
   // ==================== 通用：提示 ====================
   function notify(msg) {
     if (window.toast && typeof window.toast.show === 'function') {
@@ -341,10 +348,10 @@
           input.classList.add('input-ok');
           setTimeout(function () { input.classList.remove('input-ok'); }, 1500);
           updateIndices();
-          notify('图片上传成功');
+          notify(MSG.uploadOk);
         })
         .catch(function (err) {
-          notify('上传失败：' + err.message);
+          notify(MSG.uploadFail + '：' + err.message);
         })
         .then(function () {
           btn.disabled = false;
@@ -384,7 +391,7 @@
       rm.type = 'button';
       rm.className = 'chip-remove';
       rm.setAttribute('data-id', String(id));
-      rm.setAttribute('aria-label', '移除');
+      rm.setAttribute('aria-label', MSG.remove);
       rm.innerHTML = '<i class="fas fa-times"></i>';
       chip.appendChild(rm);
 

@@ -11,7 +11,9 @@
   <link rel="stylesheet" href="/css/admin-v5.css">
   <%- include('../partials/brand-color') %>
 </head>
-<body data-csrf="<%= csrfToken %>" data-lang="<%= lang %>">
+<body data-csrf="<%= csrfToken %>" data-lang="<%= lang %>"
+      data-msg-upload-ok="<%= t('admin.settings.uploadOk') %>"
+      data-msg-upload-fail="<%= t('admin.settings.uploadFail') %>">
   <%- include('../partials/admin-shell-start', { active: 'site', csrfToken }) %>
 
   <% const _color = settings.theme_color || '#e60012'; %>
