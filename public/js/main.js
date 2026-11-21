@@ -37,10 +37,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // 文章列表页搜索
+  // 文章列表页搜索（静态站由 static-search.js 接管，这里不绑定，避免回车跳 /posts/ 目录）
+  const isStaticPage = document.body.dataset.static === 'true';
   const searchInput = document.getElementById('searchInput');
   const searchBtn = document.getElementById('searchBtn');
-  if (searchInput) {
+  if (searchInput && !isStaticPage) {
     searchInput.addEventListener('keypress', function (e) {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -53,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
       searchInput.select();
     }
   }
-  if (searchBtn) searchBtn.addEventListener('click', doSearch);
+  if (searchBtn && !isStaticPage) searchBtn.addEventListener('click', doSearch);
 
   // 通用确认框：交由 hm-ui.js 的全局事件委托接管（form / button[data-confirm]）
   // 首页 / 详情页标签胶囊：span 嵌在文章卡片链接内，需要阻止冒泡后单独跳转

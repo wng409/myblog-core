@@ -13,7 +13,7 @@
   <link rel="icon" href="<%= (locals.settings && locals.settings.site_logo) || '/favicon.svg' %>">
   <%- include('../partials/brand-color') %>
 </head>
-<body>
+<body data-static="<%= locals.isStatic ? 'true' : 'false' %>">
   <!-- 顶部导航栏 -->
   <header>
   <div class="container header-container">
