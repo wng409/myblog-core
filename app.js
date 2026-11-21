@@ -238,7 +238,28 @@ function isImageReferencedByOthers(ref, excludeId, callback) {
     [excludeId, ref, `%${ref}%`],
     (err, row) => {
       if (err) return callback(true);
-      callback((row && row.c) > 0);
+      if (row && row.c > 0) return callback(true);
+
+      // 站点设置里的 Banner / Logo / 头像同样是「正在展示」的图，不能删
+      db.get(
+        `SELECT banner_images, site_logo, about_avatar FROM settings WHERE id = 1`,
+        (e2, s) => {
+          if (e2 || !s) return callback(false);
+          const refs = new Set();
+          if (typeof s.site_logo === 'string' && s.site_logo) refs.add(s.site_logo);
+          if (typeof s.about_avatar === 'string' && s.about_avatar) refs.add(s.about_avatar);
+          try {
+            const arr = JSON.parse(s.banner_images || '[]');
+            if (Array.isArray(arr)) {
+              arr.forEach((item) => {
+                if (typeof item === 'string') refs.add(item);
+                else if (item && typeof item.image === 'string') refs.add(item.image);
+              });
+            }
+          } catch (e) { /* 旧数据损坏时忽略 */ }
+          callback(refs.has(ref));
+        }
+      );
     }
   );
 }
@@ -272,7 +293,11 @@ function collectReferencedImages(callback) {
     (r1 || []).forEach(r => refs.add(r.cover_image));
     db.all(`SELECT content FROM posts`, (e2, r2) => {
       (r2 || []).forEach(r => extractUploadRefs(r.content).forEach(u => refs.add(u)));
-      db.get(`SELECT banner_images FROM settings WHERE id = 1`, (e3, r3) => {
+      db.get(`SELECT banner_images, site_logo, about_avatar FROM settings WHERE id = 1`, (e3, r3) => {
+        if (r3) {
+          if (typeof r3.site_logo === 'string' && r3.site_logo) refs.add(r3.site_logo);
+          if (typeof r3.about_avatar === 'string' && r3.about_avatar) refs.add(r3.about_avatar);
+        }
         if (r3 && r3.banner_images) {
           try {
             const arr = JSON.parse(r3.banner_images);
@@ -292,7 +317,8 @@ function collectReferencedImages(callback) {
   });
 }
 
-function purgeOrphanUploads(triggeredBy, callback) {
+function purgeOrphanUploads(triggeredBy, callback, options) {
+  const dryRun = !!(options && options.dryRun);
   if (!fs.existsSync(UPLOADS_DIR)) {
     if (callback) callback({ deleted: 0, freedBytes: 0 });
     return;
@@ -318,19 +344,27 @@ function purgeOrphanUploads(triggeredBy, callback) {
     }
     await walk(UPLOADS_DIR);
 
+    const candidates = [];
     for (let i = 0; i < files.length; i++) {
       const item = files[i];
       const rel = '/' + path.relative(PUBLIC_DIR, item.full).replace(/\\/g, '/');
       if (refs.has(rel)) continue;
+      if (dryRun) { candidates.push(rel); continue; }
       try { await fs.promises.unlink(item.full); deleted++; freedBytes += item.size; } catch (e) {}
       if (i > 0 && i % 50 === 0) await new Promise((r) => setImmediate(r));
+    }
+
+    if (dryRun) {
+      console.log(`[孤儿清理 dry-run] 候选 ${candidates.length} 个（触发：${triggeredBy}）`);
+      if (callback) callback({ deleted: 0, freedBytes: 0, dryRun: true, candidates });
+      return;
     }
 
     if (deleted > 0) {
       const mb = (freedBytes / 1024 / 1024).toFixed(2);
       console.log(`[孤儿清理] ${deleted} 个 / ${mb} MB（触发：${triggeredBy}）`);
     }
-    if (callback) callback({ deleted, freedBytes });
+    if (callback) callback({ deleted, freedBytes, dryRun: false });
   });
 }
 
@@ -1165,7 +1199,11 @@ app.post('/admin/posts/trash/empty', authAndCsrf, (req, res) => {
 });
 
 app.post('/admin/posts/trash/clean-orphans', authAndCsrf, (req, res) => {
-  purgeOrphanUploads('manual', ({ deleted, freedBytes }) => {
+  const dryRun = req.query.dryRun === '1';
+  purgeOrphanUploads('manual', ({ deleted, freedBytes, dryRun: isDry, candidates }) => {
+    if (isDry) {
+      return res.json({ dryRun: true, count: candidates.length, files: candidates.slice(0, 200) });
+    }
     const mb = (freedBytes / 1024 / 1024).toFixed(2);
     logAction(req, 'clean_orphan_images', `${deleted} files / ${mb} MB`);
     if (deleted === 0) {
@@ -1177,7 +1215,7 @@ app.post('/admin/posts/trash/clean-orphans', authAndCsrf, (req, res) => {
         i18n.t(currentLang, 'posts.trash.msg.orphansCleanedSuffix')
       ));
     }
-  });
+  }, { dryRun });
 });
 
 // ============================================================
