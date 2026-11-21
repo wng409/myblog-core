@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="<%= (typeof lang !== 'undefined' && lang === 'en') ? 'en' : 'zh-CN' %>">
 <head>
   <%- include('../partials/theme-init') %>
   <meta charset="UTF-8">

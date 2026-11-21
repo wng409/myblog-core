@@ -184,7 +184,18 @@ db.get('SELECT COUNT(*) AS c FROM users', (err, row) => {
       if (err) { console.error('创建默认管理员失败:', err); return; }
       console.log(`[OK] 已创建默认管理员账号：${defaultUser}`);
       if (!process.env.ADMIN_PASSWORD) {
-        console.log(`[!!] 随机初始密码：${defaultPass}`);
+        if (process.stdout.isTTY) {
+          console.log(`[!!] 随机初始密码：${defaultPass}`);
+        } else {
+          // 非交互环境（systemd / Docker）不把密码留在日志里，改为 0600 文件
+          const passFile = path.join(ROOT_DIR, 'db', '.initial-admin-password');
+          try {
+            fs.writeFileSync(passFile, defaultPass + '\n', { mode: 0o600 });
+            console.log(`[!!] 随机初始密码已写入 ${passFile}（权限 600，登录后请删除）`);
+          } catch (e) {
+            console.log(`[!!] 随机初始密码：${defaultPass}`);
+          }
+        }
         console.log('     请登录后台后立刻在「我的资料」中修改密码！');
       }
     });
@@ -449,6 +460,8 @@ app.set('layout', 'layouts/layout');
 app.locals.siteName = process.env.SITE_NAME || 'MyBlog';
 
 // ========== 时间格式化 ==========
+const SITE_TZ = process.env.SITE_TZ || 'Asia/Shanghai';
+
 app.locals.fmtTime = function (t) {
   if (!t) return '';
   let iso = String(t).trim();
@@ -458,7 +471,7 @@ app.locals.fmtTime = function (t) {
   if (isNaN(d)) return t;
 
   const parts = new Intl.DateTimeFormat('zh-CN', {
-    timeZone: 'Asia/Shanghai',
+    timeZone: SITE_TZ,
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit',
     hour12: false
@@ -628,8 +641,8 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const safeExt = MIME_TO_EXT[file.mimetype] || '.bin';
-    const random = Math.random().toString(36).slice(2, 8);
-    cb(null, Date.now() + '-' + random + safeExt);
+    // 不可预测文件名，避免枚举与碰撞
+    cb(null, Date.now() + '-' + crypto.randomBytes(6).toString('hex') + safeExt);
   }
 });
 
@@ -652,13 +665,53 @@ const upload = multer({
   }
 });
 
+// 图片魔数校验：MIME 与扩展名均可伪造，落盘后再验文件头
+const MAGIC_BYTES = {
+  '.jpg':  (b) => b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF,
+  '.jpeg': (b) => b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF,
+  '.png':  (b) => b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])),
+  '.gif':  (b) => b.subarray(0, 3).toString('ascii') === 'GIF',
+  '.webp': (b) => b.subarray(0, 4).toString('ascii') === 'RIFF' && b.subarray(8, 12).toString('ascii') === 'WEBP'
+};
+
+function verifyImageMagic(req, res, next) {
+  const targets = [];
+  if (req.file) targets.push(req.file);
+  if (Array.isArray(req.files)) targets.push(...req.files);
+
+  for (const file of targets) {
+    const ext = path.extname(file.path || '').toLowerCase();
+    const check = MAGIC_BYTES[ext];
+    if (!check) continue;
+
+    let ok = false;
+    let fd;
+    try {
+      fd = fs.openSync(file.path, 'r');
+      const head = Buffer.alloc(12);
+      const read = fs.readSync(fd, head, 0, 12, 0);
+      ok = read >= 4 && check(head);
+    } catch (e) {
+      ok = false;
+    } finally {
+      if (fd !== undefined) { try { fs.closeSync(fd); } catch (e) {} }
+    }
+
+    if (!ok) {
+      try { fs.unlinkSync(file.path); } catch (e) {}
+      return res.status(400).send('文件内容与扩展名不符，已拒绝上传');
+    }
+  }
+  next();
+}
+
 // 由上传文件的绝对路径生成可访问的 URL
 function fileUrl(file) {
   return '/' + path.relative(PUBLIC_DIR, file.path).replace(/\\/g, '/');
 }
 
 // ========== 编辑器图片上传 ==========
-app.post('/admin/upload/image', authOnly, csrfProtection, upload.single('image'), (req, res) => {
+app.post('/admin/upload/image', authOnly, csrfProtection, upload.single('image'), verifyImageMagic, (req, res) => {
   if (!req.file) return res.status(400).json({ error: i18n.t(currentLang, 'admin.upload.err.noFile') });
   const url = fileUrl(req.file);
   logAction(req, 'upload_image', url);
@@ -1050,7 +1103,7 @@ app.get('/admin/posts/edit/:id', authOnly, csrfProtection, (req, res) => {
   });
 });
 
-app.post('/admin/posts', authOnly, csrfProtection, upload.single('cover_image'), (req, res) => {
+app.post('/admin/posts', authOnly, csrfProtection, upload.single('cover_image'), verifyImageMagic, (req, res) => {
   // 标题保留原文（全局中间件已跳过 title）；其余字段已由全局清洗处理
   const title = sanitizePlainText(req.body.title || '');
   const { slug, content, tags, bilibili_embed, cover_image_url } = req.body;
@@ -1082,7 +1135,7 @@ app.post('/admin/posts', authOnly, csrfProtection, upload.single('cover_image'),
   );
 });
 
-app.post('/admin/posts/:id', authOnly, csrfProtection, upload.single('cover_image'), (req, res) => {
+app.post('/admin/posts/:id', authOnly, csrfProtection, upload.single('cover_image'), verifyImageMagic, (req, res) => {
   getPostById(req.params.id, (err, oldPost) => {
     if (err || !oldPost) return res.status(404).send(i18n.t(currentLang, 'posts.err.notFound'));
 
@@ -1381,8 +1434,8 @@ function handleSettingImage(field, column) {
 }
 
 // 同上：csrfProtection 在 multer 之前
-app.post('/admin/settings/upload-logo', authOnly, csrfProtection, upload.single('logo'), handleSettingImage('upload_logo', 'site_logo'));
-app.post('/admin/settings/upload-avatar', authOnly, csrfProtection, upload.single('avatar'), handleSettingImage('upload_avatar', 'about_avatar'));
+app.post('/admin/settings/upload-logo', authOnly, csrfProtection, upload.single('logo'), verifyImageMagic, handleSettingImage('upload_logo', 'site_logo'));
+app.post('/admin/settings/upload-avatar', authOnly, csrfProtection, upload.single('avatar'), verifyImageMagic, handleSettingImage('upload_avatar', 'about_avatar'));
 
 // ============================================================
 // 静态站导出（一键生成 / 打包下载）
@@ -1673,7 +1726,26 @@ app.use((err, req, res, next) => {
 // ============================================================
 // 启动
 // ============================================================
-app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, () => {
   console.log(`博客已启动: http://${HOST === '0.0.0.0' ? '127.0.0.1' : HOST}:${PORT}`);
   console.log(`后台地址: http://${HOST === '0.0.0.0' ? '127.0.0.1' : HOST}:${PORT}/admin`);
+});
+
+// ========== 优雅退出与异常兜底 ==========
+function gracefulShutdown(signal) {
+  console.log(`[shutdown] 收到 ${signal}，正在关闭...`);
+  server.close(() => {
+    db.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 300).unref();
+  });
+  // 8 秒未关完则强制退出，避免 systemd 一直等
+  setTimeout(() => { console.error('[shutdown] 超时，强制退出'); process.exit(1); }, 8000).unref();
+}
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('[unhandledRejection]', err);
 });

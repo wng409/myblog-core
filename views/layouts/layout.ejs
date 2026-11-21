@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" class="<%= locals.darkMode ? 'dark' : '' %>">
+<html lang="<%= locals.lang === 'en' ? 'en' : 'zh-CN' %>" class="<%= locals.darkMode ? 'dark' : '' %>">
 <head>
   <%- include('../partials/theme-init') %>
   <% const SITE_TITLE = (locals.settings && locals.settings.site_title) || siteName; %>

@@ -65,7 +65,7 @@ const fmtTime = function (t) {
   if (isNaN(d)) return t;
 
   const parts = new Intl.DateTimeFormat('zh-CN', {
-    timeZone: 'Asia/Shanghai',
+    timeZone: (process.env.SITE_TZ || 'Asia/Shanghai'),
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit',
     hour12: false
