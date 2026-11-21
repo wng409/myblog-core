@@ -10,7 +10,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: myblog-core:1.1.2
+    image: myblog-core:1.2.0
     container_name: myblog-core
     ports:
       - "3000:3000"
