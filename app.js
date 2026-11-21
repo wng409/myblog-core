@@ -594,10 +594,20 @@ function toSafeSlug(raw, fallbackTitle) {
 
 // 全局清洗跳过名单：正文（Markdown 渲染时处理）、纯文本字段、
 // 密码类字段（DOMPurify 会把 p@ss<w0rd 截成 p@ss，导致初始密码永久无法登录）
+// JSON 字段（bannerItems / featuredIds / social_links）不能做 HTML 清洗：
+// 含 '<' 时 DOMPurify 会把整段 JSON 截断，导致「数据格式错误」。
 const SKIP_SANITIZE_KEYS = new Set([
   'content', 'title', 'tags',
-  'password', 'oldPassword', 'newPassword', 'confirmPassword'
+  'password', 'oldPassword', 'newPassword', 'confirmPassword',
+  'bannerItems', 'bannerVersion', 'featuredIds', 'social_links'
 ]);
+
+// 统一字符串入口：非字符串一律视为空（避免数组/对象被 sqlite3 写成 [object Object]）
+function asString(v, max) {
+  if (typeof v !== 'string') return '';
+  const s = v.trim();
+  return (max && s.length > max) ? s.slice(0, max) : s;
+}
 
 app.use((req, res, next) => {
   if (req.body && typeof req.body === 'object') {
@@ -605,6 +615,9 @@ app.use((req, res, next) => {
       if (SKIP_SANITIZE_KEYS.has(key)) return;
       if (typeof req.body[key] === 'string') {
         req.body[key] = sanitizeString(req.body[key]);
+      } else {
+        // 数组 / 对象字段（title[]=a、title[k]=v）直接丢弃，避免静默脏写
+        delete req.body[key];
       }
     });
   }
@@ -663,7 +676,15 @@ const MAGIC_BYTES = {
 function verifyImageMagic(req, res, next) {
   const targets = [];
   if (req.file) targets.push(req.file);
-  if (Array.isArray(req.files)) targets.push(...req.files);
+  if (Array.isArray(req.files)) {
+    targets.push(...req.files);
+  } else if (req.files && typeof req.files === 'object') {
+    // multer .fields() / .any() 时 req.files 是 { 字段名: [File] }
+    Object.keys(req.files).forEach((key) => {
+      const list = req.files[key];
+      if (Array.isArray(list)) targets.push(...list);
+    });
+  }
 
   for (const file of targets) {
     const ext = path.extname(file.path || '').toLowerCase();
@@ -1091,12 +1112,24 @@ app.get('/admin/posts/edit/:id', authOnly, csrfProtection, (req, res) => {
 
 app.post('/admin/posts', authOnly, csrfProtection, upload.single('cover_image'), verifyImageMagic, (req, res) => {
   // 标题保留原文（全局中间件已跳过 title）；其余字段已由全局清洗处理
-  const title = sanitizePlainText(req.body.title || '');
-  const { slug, content, tags, bilibili_embed, cover_image_url } = req.body;
+  const title = sanitizePlainText(asString(req.body.title, 200));
+  const slug = asString(req.body.slug, 80);
+  const content = typeof req.body.content === 'string' ? req.body.content : '';
+  const tags = asString(req.body.tags, 300);
+  const bilibili_embed = asString(req.body.bilibili_embed, 500);
+  const cover_image_url = asString(req.body.cover_image_url, 300);
   const finalSlug = toSafeSlug(slug, title);
   const now = new Date().toISOString();
   const safeBilibili = sanitizeUrl(bilibili_embed);
   const cleanTags = normalizeTags(tags);
+
+  // 必填校验：非字符串字段已被丢弃，这里拦住空标题/空正文，避免空数据入库
+  if (!title) {
+    return res.redirect('/admin/posts/new?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.err.titleRequired')));
+  }
+  if (!content.trim()) {
+    return res.redirect('/admin/posts/new?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.err.contentRequired')));
+  }
 
   let cover_image = '';
   if (req.file) cover_image = fileUrl(req.file);
@@ -1126,8 +1159,13 @@ app.post('/admin/posts/:id', authOnly, csrfProtection, upload.single('cover_imag
     if (err || !oldPost) return res.status(404).send(i18n.t(currentLang, 'posts.err.notFound'));
 
     // 标题保留原文（全局中间件已跳过 title）；其余字段已由全局清洗处理
-    const title = sanitizePlainText(req.body.title || '');
-    const { slug, content, tags, bilibili_embed, existing_cover, cover_image_url } = req.body;
+    const title = sanitizePlainText(asString(req.body.title, 200));
+    const slug = asString(req.body.slug, 80);
+    const content = typeof req.body.content === 'string' ? req.body.content : '';
+    const tags = asString(req.body.tags, 300);
+    const bilibili_embed = asString(req.body.bilibili_embed, 500);
+    const existing_cover = asString(req.body.existing_cover, 300);
+    const cover_image_url = asString(req.body.cover_image_url, 300);
     const finalSlug = toSafeSlug(slug, title);
     const now = new Date().toISOString();
     const safeBilibili = sanitizeUrl(bilibili_embed);
@@ -1372,7 +1410,7 @@ const siteFormUpload = upload.fields([
 ]);
 
 // csrfProtection 必须放在 multer 之前：未通过 CSRF 校验的请求不应先落盘
-app.post('/admin/settings/site', authOnly, csrfProtection, siteFormUpload, (req, res) => {
+app.post('/admin/settings/site', authOnly, csrfProtection, siteFormUpload, verifyImageMagic, (req, res) => {
   const sets = [], vals = [];
   // 大表单中的图片文件（若已选择则覆盖对应字段）
   const logoFile = req.files && req.files.site_logo_file && req.files.site_logo_file[0];
@@ -1529,6 +1567,7 @@ app.post('/admin/settings/banner', authOnly, csrfProtection, (req, res) => {
     .filter(item => item.postId || item.title || item.image)
     .map(item => Object.assign({}, item, {
       postId: Number(item.postId) || null,
+      title: sanitizePlainText(asString(item && item.title, 100)),
       image: sanitizeUrl(item && item.image)
     }));
 
