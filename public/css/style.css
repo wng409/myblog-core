@@ -467,6 +467,8 @@ header {
   display: inline-block;
   width: 10px;
   height: 10px;
+  border: 0;                 /* button 默认边框清零 */
+  padding: 0;
   border-radius: 50%;
   background: var(--white-50);
   margin: 0 6px;

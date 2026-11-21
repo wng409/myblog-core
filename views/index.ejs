@@ -49,7 +49,7 @@
             <button class="carousel-btn next" id="carouselNext" type="button" aria-label="<%= t('home.carousel.next') %>">&#10095;</button>
             <div class="carousel-dots">
               <% bannerPosts.forEach((_, index) => { %>
-                <span class="dot <%= index === 0 ? 'active' : '' %>" data-index="<%= index %>"></span>
+                <button type="button" class="dot <%= index === 0 ? 'active' : '' %>" data-index="<%= index %>" aria-label="第 <%= index + 1 %> 张"></button>
               <% }) %>
             </div>
           </div>
