@@ -168,7 +168,7 @@
                data-ip="<%= l.ip || '—' %>"
                data-ua="<%= l.user_agent || '—' %>"
                data-time="<%= fmtTime(l.created_at) %>"
-               data-search="<%= (String(l.ip || '') + ' ' + String(l.username || '') + ' ' + String(fmtTarget(l.action, l.target)) + ' ' + String(l.user_agent || '')).replace(/"/g, '&quot;') %>">
+               data-search="<%= String(l.ip || '') + ' ' + String(l.username || '') + ' ' + String(fmtTarget(l.action, l.target)) + ' ' + String(l.user_agent || '') %>">
             <div class="log-info">
               <div class="log-main">
                 <div class="dot dot-<%= l.action %>"></div>
