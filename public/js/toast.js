@@ -117,22 +117,9 @@
     startTimer(duration);
   };
 
-  // 页面加载时从 URL 读 msg / err
+  // 页面加载时的 ?msg= / ?err= 提示统一由 hm-ui.js 消费（避免双份浮层），
+  // 这里只保留轻提示 API 与新设备登录通知。
   document.addEventListener('DOMContentLoaded', function () {
-    const params = new URLSearchParams(location.search);
-    const msg = params.get('msg');
-    const err = params.get('err');
-
-    if (msg) window.showToast(tr('success'), msg, 'success');
-    if (err) window.showToast(tr('error'), err, 'error');
-
-    if (msg || err) {
-      const url = new URL(location.href);
-      url.searchParams.delete('msg');
-      url.searchParams.delete('err');
-      history.replaceState({}, '', url.toString());
-    }
-
     // 新设备登录通知
     const deviceEl = document.getElementById('device-notice-data');
     if (deviceEl) {

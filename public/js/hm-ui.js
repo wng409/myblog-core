@@ -510,6 +510,16 @@
   // 后端仍以 redirect + ?msg= / ?err= 的形式传话；这里弹出一次后把参数从地址栏抹掉，
   // 避免用户刷新页面时重复弹窗。
 
+  // 只接受「像系统提示」的文案：限长、禁标签 / URL / 引号 / 换行，
+  // 防止构造链接在真实域名上弹出伪造的“登录失效”等提示。
+  function sanitizeFlash(text) {
+    var s = String(text == null ? '' : text).trim();
+    if (!s || s.length > 120) return '';
+    if (/[<>"'`\r\n]/.test(s)) return '';
+    if (/https?:\/\/|javascript:|data:/i.test(s)) return '';
+    return s;
+  }
+
   function drainFlash() {
     var url;
     try {
@@ -518,9 +528,17 @@
       return;
     }
 
-    var msg = url.searchParams.get('msg');
-    var err = url.searchParams.get('err');
-    if (!msg && !err) return;
+    var msg = sanitizeFlash(url.searchParams.get('msg'));
+    var err = sanitizeFlash(url.searchParams.get('err'));
+    if (!msg && !err) {
+      // 即使文案不合法也要把参数从地址栏抹掉
+      if (url.searchParams.get('msg') || url.searchParams.get('err')) {
+        url.searchParams.delete('msg');
+        url.searchParams.delete('err');
+        try { window.history.replaceState(null, '', url.pathname + (url.search || '') + url.hash); } catch (e) {}
+      }
+      return;
+    }
 
     url.searchParams.delete('msg');
     url.searchParams.delete('err');
