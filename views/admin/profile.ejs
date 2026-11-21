@@ -28,7 +28,6 @@
       <h2><%= t('profile.accountInfo') %></h2>
       <div class="info-row"><div class="label">ID</div><div class="value"><%= me.id %></div></div>
       <div class="info-row"><div class="label"><%= t('profile.username') %></div><div class="value"><%= me.username %></div></div>
-      <div class="info-row"><div class="label"><%= t('profile.role') %></div><div class="value"><%= me.role %></div></div>
       <div class="info-row"><div class="label"><%= t('profile.registeredAt') %></div><div class="value"><%= fmtTime(me.created_at) %></div></div>
       <div class="info-row"><div class="label"><%= t('profile.lastLogin') %></div><div class="value"><%= me.last_login ? fmtTime(me.last_login) : '—' %></div></div>
     </div>

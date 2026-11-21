@@ -179,7 +179,7 @@ db.get('SELECT COUNT(*) AS c FROM users', (err, row) => {
     const generated = crypto.randomBytes(9).toString('base64url');
     const defaultPass = process.env.ADMIN_PASSWORD || generated;
     users.createUser(db, {
-      username: defaultUser, password: defaultPass, role: 'admin'
+      username: defaultUser, password: defaultPass
     }, (err) => {
       if (err) { console.error('创建默认管理员失败:', err); return; }
       console.log(`[OK] 已创建默认管理员账号：${defaultUser}`);
@@ -497,11 +497,7 @@ function passwordIssue(pwd) {
   return '';
 }
 
-// 仅管理员：设置、删除/恢复/清空、导出、审计日志
-const adminOnly = (req, res, next) => {
-  if (req.session && req.session.user && req.session.user.role === 'admin') return next();
-  return res.status(403).send(i18n.t(currentLang, 'admin.err.forbidden'));
-};
+// 单用户模型：不再区分角色，所有登录用户即管理员（原 adminOnly 已移除）
 
 // ========== XSS 清理 ==========
 const sanitizeString = (str) => {
@@ -853,7 +849,6 @@ app.post('/admin/login', loginLimiter, (req, res) => {
       req.session.user = {
         id: user.id,
         username: user.username,
-        role: user.role,
         pwdTag: user.pwd_tag || null
       };
 
@@ -1048,7 +1043,7 @@ app.post('/admin/posts/:id', authOnly, csrfProtection, upload.single('cover_imag
   });
 });
 
-app.post('/admin/posts/delete/:id', authAndCsrf, adminOnly, (req, res) => {
+app.post('/admin/posts/delete/:id', authAndCsrf, (req, res) => {
   db.run(
     `UPDATE posts SET deleted_at = CURRENT_TIMESTAMP,
        slug = COALESCE(slug,'') || '__deleted_' || strftime('%s','now')
@@ -1076,7 +1071,7 @@ app.get('/admin/posts/trash', authOnly, csrfProtection, (req, res) => {
   });
 });
 
-app.post('/admin/posts/restore/:id', authAndCsrf, adminOnly, (req, res) => {
+app.post('/admin/posts/restore/:id', authAndCsrf, (req, res) => {
   getDeletedPostById(req.params.id, (err, post) => {
     if (err || !post) return res.redirect('/admin/posts/trash?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.err.notFound')));
     const baseSlug = post.slug || '';
@@ -1100,7 +1095,7 @@ app.post('/admin/posts/restore/:id', authAndCsrf, adminOnly, (req, res) => {
   });
 });
 
-app.post('/admin/posts/purge/:id', authAndCsrf, adminOnly, (req, res) => {
+app.post('/admin/posts/purge/:id', authAndCsrf, (req, res) => {
   getDeletedPostById(req.params.id, (err, post) => {
     if (err || !post) return res.redirect('/admin/posts/trash?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.err.notFound')));
     db.run('DELETE FROM posts WHERE id = ? AND deleted_at IS NOT NULL', [req.params.id], function (err) {
@@ -1112,7 +1107,7 @@ app.post('/admin/posts/purge/:id', authAndCsrf, adminOnly, (req, res) => {
   });
 });
 
-app.post('/admin/posts/trash/empty', authAndCsrf, adminOnly, (req, res) => {
+app.post('/admin/posts/trash/empty', authAndCsrf, (req, res) => {
   db.all('SELECT * FROM posts WHERE deleted_at IS NOT NULL', (err, posts) => {
     if (err) posts = [];
     db.run('DELETE FROM posts WHERE deleted_at IS NOT NULL', function (err) {
@@ -1143,7 +1138,7 @@ app.post('/admin/posts/trash/clean-orphans', authAndCsrf, (req, res) => {
 // ============================================================
 // 首页设置
 // ============================================================
-app.get('/admin/settings', authOnly, csrfProtection, adminOnly, (req, res) => {
+app.get('/admin/settings', authOnly, csrfProtection, (req, res) => {
   getSetting((err, setting) => {
     if (err) return res.status(500).send(i18n.t(currentLang, 'admin.settings.err.dbError'));
     const bannerRaw   = (setting && setting.banner_images) || '[]';
@@ -1175,7 +1170,7 @@ app.get('/admin/site', authOnly, csrfProtection, (req, res) => {
   });
 });
 
-app.post('/admin/settings/language', authOnly, csrfProtection, adminOnly, (req, res) => {
+app.post('/admin/settings/language', authOnly, csrfProtection, (req, res) => {
   const lang = (req.body.site_lang || '').trim();
   if (!i18n.LANGS.includes(lang)) {
     return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.settings.err.unsupportedLang')));
@@ -1255,7 +1250,7 @@ const siteFormUpload = upload.fields([
 ]);
 
 // csrfProtection 必须放在 multer 之前：未通过 CSRF 校验的请求不应先落盘
-app.post('/admin/settings/site', authOnly, csrfProtection, adminOnly, siteFormUpload, (req, res) => {
+app.post('/admin/settings/site', authOnly, csrfProtection, siteFormUpload, (req, res) => {
   const sets = [], vals = [];
   // 大表单中的图片文件（若已选择则覆盖对应字段）
   const logoFile = req.files && req.files.site_logo_file && req.files.site_logo_file[0];
@@ -1303,8 +1298,8 @@ function handleSettingImage(field, column) {
 }
 
 // 同上：csrfProtection 在 multer 之前
-app.post('/admin/settings/upload-logo', authOnly, csrfProtection, adminOnly, upload.single('logo'), handleSettingImage('upload_logo', 'site_logo'));
-app.post('/admin/settings/upload-avatar', authOnly, csrfProtection, adminOnly, upload.single('avatar'), handleSettingImage('upload_avatar', 'about_avatar'));
+app.post('/admin/settings/upload-logo', authOnly, csrfProtection, upload.single('logo'), handleSettingImage('upload_logo', 'site_logo'));
+app.post('/admin/settings/upload-avatar', authOnly, csrfProtection, upload.single('avatar'), handleSettingImage('upload_avatar', 'about_avatar'));
 
 // ============================================================
 // 静态站导出（一键生成 / 打包下载）
@@ -1323,7 +1318,7 @@ app.post('/admin/export-build', authOnly, csrfProtection, (req, res) => {
   });
 });
 
-app.get('/admin/export-download', authOnly, adminOnly, (req, res) => {
+app.get('/admin/export-download', authOnly, (req, res) => {
   const distDir = path.join(ROOT_DIR, 'dist');
   if (!fs.existsSync(distDir)) {
     return res.redirect('/admin/settings?err=' + encodeURIComponent(i18n.t(currentLang, 'admin.export.noDist')));
@@ -1341,7 +1336,7 @@ app.get('/admin/export-download', authOnly, adminOnly, (req, res) => {
   logAction(req, 'export_download', 'dist');
 });
 
-app.post('/admin/settings', authOnly, csrfProtection, adminOnly, (req, res) => {
+app.post('/admin/settings', authOnly, csrfProtection, (req, res) => {
   const { bannerItems, featuredIds } = req.body;
 
   // 关键：只有"显式传了该字段"才更新对应列，未传的字段保持库中原值，
@@ -1400,7 +1395,7 @@ app.post('/admin/settings', authOnly, csrfProtection, adminOnly, (req, res) => {
   });
 });
 
-app.post('/admin/settings/banner', authOnly, csrfProtection, adminOnly, (req, res) => {
+app.post('/admin/settings/banner', authOnly, csrfProtection, (req, res) => {
   let parsed;
   try {
     parsed = typeof req.body.bannerItems === 'string'
@@ -1443,7 +1438,7 @@ app.post('/admin/settings/banner', authOnly, csrfProtection, adminOnly, (req, re
 // ============================================================
 // 操作日志
 // ============================================================
-app.get('/admin/logs', authOnly, csrfProtection, adminOnly, (req, res) => {
+app.get('/admin/logs', authOnly, csrfProtection, (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const pageSize = 50;
   const offset = (page - 1) * pageSize;
