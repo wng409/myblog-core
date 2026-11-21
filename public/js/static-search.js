@@ -205,7 +205,9 @@
       if (noResults) noResults.parentNode.removeChild(noResults);
       grid = document.createElement('div');
       grid.className = 'posts-grid';
-      MAIN.insertBefore(grid, MAIN.firstChild);
+      // 插到工具栏之后，避免零结果时把 .posts-toolbar 挤到列表下方
+      var toolbar = MAIN.querySelector('.posts-toolbar');
+      MAIN.insertBefore(grid, toolbar ? toolbar.nextSibling : MAIN.firstChild);
     }
     return grid;
   }
