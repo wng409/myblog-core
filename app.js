@@ -1316,6 +1316,9 @@ app.post('/admin/posts/trash/empty', authAndCsrf, (req, res) => {
     if (err) posts = [];
     db.run('DELETE FROM posts WHERE deleted_at IS NOT NULL', function (err) {
       if (err) return res.redirect('/admin/posts/trash?err=' + encodeURIComponent(i18n.t(currentLang, 'posts.trash.err.emptyFailed')));
+      if (!this.changes) {
+        return res.redirect('/admin/posts/trash?msg=' + encodeURIComponent(i18n.t(currentLang, 'posts.trash.msg.emptyAlready')));
+      }
       invalidateAllTagsCache();
       logAction(req, 'empty_trash', `posts`);
       posts.forEach(p => deleteRemovedImages(p, '', '', req));
